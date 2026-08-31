@@ -32,19 +32,16 @@ import java.time.OffsetDateTime;
  *
  * Design notes:
  * <ul>
- *   <li>{@code orderId} is set for ready-made full payments (payment_purpose = FULL).</li>
- *   <li>{@code customOrderRequestId} is set for custom advance/remaining payments.</li>
+ *   <li>{@code order} is set for ready-made full payments (payment_purpose = FULL).</li>
+ *   <li>{@code customOrderRequest} is set for custom advance/remaining payments.</li>
  *   <li>One-to-many: an order may have multiple Payment rows (e.g., a FAILED attempt
  *       followed by a SUCCESS) — a failed row is terminal; a retry is a new row.</li>
  *   <li>{@code completedAt} is application-managed: set when a SUCCESS or FAILED
  *       outcome is recorded. Not DB-DEFAULT-generated.</li>
  *   <li>{@code initiatedAt}: DB DEFAULT now() — @Generated(INSERT) applied.</li>
- *   <li>The {@code customOrderRequest} side references Phase 2E entity; mapped here
- *       as a plain nullable Long column to avoid a hard compile-time dependency on
- *       an entity that does not yet exist. The FK is declared in V4 migration so the
- *       constraint exists in the DB; the JPA column stores the raw ID. When Phase 2E
- *       creates {@code CustomOrderRequest}, this mapping will be upgraded to a proper
- *       {@code @ManyToOne} reference.</li>
+ *   <li>Phase 2E: {@code customOrderRequest} upgraded from a raw Long column to a
+ *       proper {@code @ManyToOne} reference now that {@link CustomOrderRequest} exists.
+ *       The deferred FK constraint is added to V5 migration.</li>
  * </ul>
  *
  * Approved schema source: Database Design &amp; ERD §3.11, §10.
@@ -61,7 +58,7 @@ public class Payment {
     /**
      * Owning order — nullable FK to {@code customer_order.id}.
      * Set for FULL ready-made payments; null for custom-order payments.
-     * Exactly one of {@code order} / {@code customOrderRequestId} must be non-null
+     * Exactly one of {@code order} / {@code customOrderRequest} must be non-null
      * — enforced by a database CHECK constraint (ERD §3.11).
      * ON DELETE RESTRICT: an order with payment rows cannot be hard-deleted.
      */
@@ -70,14 +67,16 @@ public class Payment {
     private CustomerOrder order;
 
     /**
-     * Custom order request reference — nullable raw FK value.
+     * Owning custom order request — nullable FK to {@code custom_order_request.id}.
      * Set for ADVANCE / REMAINING custom-order payments; null for ready-made orders.
-     * Stored as a plain Long because {@code CustomOrderRequest} is a Phase 2E entity
-     * not yet created. The FK constraint exists in the V4 migration.
-     * This column will be refactored to a proper @ManyToOne in Phase 2E.
+     * Exactly one of {@code order} / {@code customOrderRequest} must be non-null
+     * — enforced by a database CHECK constraint (ERD §3.11).
+     * The FK constraint is added in V5 migration (deferred from V4, ERD §10.2).
+     * ON DELETE RESTRICT.
      */
-    @Column(name = "custom_order_request_id", nullable = true)
-    private Long customOrderRequestId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "custom_order_request_id", nullable = true)
+    private CustomOrderRequest customOrderRequest;
 
     /**
      * Distinguishes ready-made full payment from custom advance/remaining (FR-PAY-05).
@@ -152,9 +151,9 @@ public class Payment {
     public CustomerOrder getOrder() { return order; }
     public void setOrder(CustomerOrder order) { this.order = order; }
 
-    public Long getCustomOrderRequestId() { return customOrderRequestId; }
-    public void setCustomOrderRequestId(Long customOrderRequestId) {
-        this.customOrderRequestId = customOrderRequestId;
+    public CustomOrderRequest getCustomOrderRequest() { return customOrderRequest; }
+    public void setCustomOrderRequest(CustomOrderRequest customOrderRequest) {
+        this.customOrderRequest = customOrderRequest;
     }
 
     public PaymentPurpose getPaymentPurpose() { return paymentPurpose; }

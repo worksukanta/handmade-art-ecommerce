@@ -19,6 +19,7 @@ import com.handmadeart.ecommerce.repository.AppUserRepository;
 import com.handmadeart.ecommerce.repository.CartItemRepository;
 import com.handmadeart.ecommerce.repository.CartRepository;
 import com.handmadeart.ecommerce.repository.CategoryRepository;
+import com.handmadeart.ecommerce.repository.CustomOrderRequestRepository;
 import com.handmadeart.ecommerce.repository.CustomerOrderRepository;
 import com.handmadeart.ecommerce.repository.OrderItemRepository;
 import com.handmadeart.ecommerce.repository.PaymentRepository;
@@ -100,6 +101,7 @@ class CommercePersistenceIntegrationTest {
     @Autowired private CustomerOrderRepository orderRepository;
     @Autowired private OrderItemRepository orderItemRepository;
     @Autowired private PaymentRepository paymentRepository;
+    @Autowired private CustomOrderRequestRepository customOrderRequestRepository;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -587,12 +589,20 @@ class CommercePersistenceIntegrationTest {
 
     @Test
     @Transactional
-    void payment_withCustomOrderRequestId_persists() {
-        // Verifies that payment.custom_order_request_id can hold a raw ID value.
-        // The FK to custom_order_request is deferred to Phase 2E (V5 migration).
-        // We use a synthetic non-null Long and verify the CHECK constraint accepts it.
+    void payment_withCustomOrderRequest_persists() {
+        // Phase 2E: payment.custom_order_request_id is now a proper @ManyToOne FK.
+        // Verify a payment linked to a custom order request (ADVANCE purpose) persists.
+        AppUser user = savedUser("pay_cor_persist");
+        com.handmadeart.ecommerce.entity.CustomOrderRequest req =
+                new com.handmadeart.ecommerce.entity.CustomOrderRequest();
+        req.setUser(user);
+        req.setProductType("Painting");
+        req.setDescription("A test custom request for payment test");
+        req.setStatus(com.handmadeart.ecommerce.entity.CustomOrderRequestStatus.REQUESTED);
+        req = customOrderRequestRepository.saveAndFlush(req);
+
         Payment payment = new Payment();
-        payment.setCustomOrderRequestId(999L); // no FK yet — raw column
+        payment.setCustomOrderRequest(req);
         payment.setPaymentPurpose(PaymentPurpose.ADVANCE);
         payment.setAmount(new BigDecimal("200.00"));
         payment.setPaymentMethod("SANDBOX");
@@ -600,7 +610,7 @@ class CommercePersistenceIntegrationTest {
         Payment saved = paymentRepository.saveAndFlush(payment);
 
         assertThat(saved.getId()).isNotNull().isPositive();
-        assertThat(saved.getCustomOrderRequestId()).isEqualTo(999L);
+        assertThat(saved.getCustomOrderRequest().getId()).isEqualTo(req.getId());
         assertThat(saved.getOrder()).isNull();
     }
 
@@ -621,12 +631,21 @@ class CommercePersistenceIntegrationTest {
     @Test
     @Transactional
     void payment_bothReferencesSet_rejectedByMutualExclusivityCheck() {
+        // Phase 2E: both order and customOrderRequest set — CHECK sum = 2 → rejected.
         AppUser user = savedUser("pay_both");
         CustomerOrder order = savedOrder(user);
 
+        com.handmadeart.ecommerce.entity.CustomOrderRequest req =
+                new com.handmadeart.ecommerce.entity.CustomOrderRequest();
+        req.setUser(user);
+        req.setProductType("Painting");
+        req.setDescription("Request for mutual-exclusivity test");
+        req.setStatus(com.handmadeart.ecommerce.entity.CustomOrderRequestStatus.REQUESTED);
+        com.handmadeart.ecommerce.entity.CustomOrderRequest finalReq =
+                customOrderRequestRepository.saveAndFlush(req);
         Payment payment = new Payment();
         payment.setOrder(order);
-        payment.setCustomOrderRequestId(42L);  // both set → sum = 2 → CHECK fails
+        payment.setCustomOrderRequest(finalReq);  // both set → sum = 2 → CHECK fails
         payment.setPaymentPurpose(PaymentPurpose.FULL);
         payment.setAmount(new BigDecimal("50.00"));
         payment.setPaymentMethod("SANDBOX");

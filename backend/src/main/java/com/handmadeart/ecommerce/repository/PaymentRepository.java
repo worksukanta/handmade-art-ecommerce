@@ -11,10 +11,6 @@ import java.util.Optional;
  * Spring Data JPA repository for {@link Payment}.
  *
  * Approved operations: FR-PAY-01..06, UC-008, UC-015.
- *
- * Note: {@code customOrderRequestId} is stored as a raw Long in the Payment entity
- * until Phase 2E creates the {@code CustomOrderRequest} entity. Queries by
- * custom_order_request_id use the raw column value.
  */
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
@@ -29,6 +25,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Index on payment.custom_order_request_id serves this query (ERD §17).
      */
     List<Payment> findByCustomOrderRequestId(Long customOrderRequestId);
+
+    /**
+     * Find a payment by custom order request entity (Phase 2E upgrade).
+     * Used when a {@link com.handmadeart.ecommerce.entity.CustomOrderRequest} is available.
+     */
+    List<Payment> findByCustomOrderRequest(com.handmadeart.ecommerce.entity.CustomOrderRequest customOrderRequest);
 
     /**
      * Find the successful payment for a given order — used for order-history display.

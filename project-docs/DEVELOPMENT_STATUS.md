@@ -12,14 +12,14 @@ Phase 2 — Database Foundation
 
 ## Current Module
 
-Phase 2E — Custom Artwork Database Model — Not Started
+Phase 2F — Database Integration Validation — Not Started
 
 ## Last Verified Milestone
 
-Phase 2D — Commerce Database Model — COMPLETED and VERIFIED against live PostgreSQL.
+Phase 2E — Custom Artwork Database Model — COMPLETED and VERIFIED against live PostgreSQL.
 
 `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Overall Status
 
@@ -32,6 +32,8 @@ Identity and Address persistence model implemented (Phase 2B). Verified against 
 Catalogue and Inventory persistence model implemented and fully verified against live PostgreSQL: Category, Product, ProductImage, ProductRelated, Inventory entities, repositories, V3 migration (Phase 2C). All 36 db-integration tests pass.
 
 Commerce persistence model implemented and fully verified against live PostgreSQL: Cart, CartItem, CustomerOrder, OrderItem, Payment entities, repositories, V4 migration (Phase 2D). All 53 db-integration tests pass.
+
+Custom Artwork persistence model implemented and fully verified against live PostgreSQL: CustomOrderRequest, CustomOrderImage, Quotation, Shipment entities, repositories, V5 migration (Phase 2E). All 82 db-integration tests pass.
 
 Frontend not started.
 
@@ -67,7 +69,7 @@ project-docs/
 ## Development Modules
 
 * [x] Spring Boot Project Initialization
-* [x] Database Foundation (Phase 2A–2C complete and verified; Phase 2D–2F pending)
+* [x] Database Foundation (Phase 2A–2E complete and verified; Phase 2F pending)
 * [ ] Authentication and Authorization
 * [ ] Customer Profile
 * [ ] Address Management
@@ -109,7 +111,7 @@ project-docs/
 * [x] Phase 2B — Identity and Customer Database Model
 * [x] Phase 2C — Catalogue and Inventory Database Model
 * [x] Phase 2D — Commerce Database Model
-* [ ] Phase 2E — Custom Artwork Database Model
+* [x] Phase 2E — Custom Artwork Database Model
 * [ ] Phase 2F — Database Integration Validation
 
 ## Backend Status
@@ -133,8 +135,9 @@ Migrations:
 - V2__create_identity_tables.sql — app_user and address tables (applied and verified)
 - V3__create_catalogue_inventory_tables.sql — category, product, product_image, product_related, inventory tables (applied and verified)
 - V4__create_commerce_tables.sql — cart, cart_item, customer_order, order_item, payment tables (applied and verified)
+- V5__create_custom_artwork_tables.sql — custom_order_request, custom_order_image, quotation, shipment tables; deferred FK payment.custom_order_request_id (applied and verified)
 
-Enums created: UserRole, CategoryStatus, ProductStatus, ProductType, OrderStatus, PaymentStatus, PaymentPurpose
+Enums created: UserRole, CategoryStatus, ProductStatus, ProductType, OrderStatus, PaymentStatus, PaymentPurpose, CustomOrderRequestStatus, QuotationStatus, ShipmentStatus
 
 Entities created:
 - UserRole (enum: CUSTOMER, ADMIN)
@@ -149,6 +152,21 @@ Entities created:
 - ProductRelatedId (embeddable composite key)
 - ProductRelated (entity: product_related junction table)
 - Inventory (entity: inventory table, shared PK/FK with product)
+- OrderStatus (enum: 6 lifecycle values)
+- PaymentStatus (enum: PENDING, SUCCESS, FAILED)
+- PaymentPurpose (enum: FULL, ADVANCE, REMAINING)
+- Cart (entity: cart table)
+- CartItem (entity: cart_item table)
+- CustomerOrder (entity: customer_order table)
+- OrderItem (entity: order_item table)
+- Payment (entity: payment table — Phase 2E: customOrderRequest upgraded to @ManyToOne)
+- CustomOrderRequestStatus (enum: 13 lifecycle values)
+- QuotationStatus (enum: PENDING, APPROVED, REJECTED, EXPIRED)
+- ShipmentStatus (enum: PENDING, SHIPPED, DELIVERED)
+- CustomOrderRequest (entity: custom_order_request table)
+- CustomOrderImage (entity: custom_order_image table)
+- Quotation (entity: quotation table)
+- Shipment (entity: shipment table)
 
 Repositories created:
 - AppUserRepository (findByEmailIgnoreCase, existsByEmailIgnoreCase, countByRole, findByEmailLowerCase)
@@ -162,13 +180,18 @@ Repositories created:
 - CartItemRepository (findByCartId, findByCartIdAndProductId, countByCartId, deleteByCartId)
 - CustomerOrderRepository (findByUserId paginated, findByStatus paginated, findByUserIdAndStatus)
 - OrderItemRepository (findByOrderId, countByOrderId)
-- PaymentRepository (findByOrderId, findByCustomOrderRequestId, findByOrderIdAndStatus, findByProviderTransactionReference)
+- PaymentRepository (findByOrderId, findByCustomOrderRequestId, findByCustomOrderRequest, findByOrderIdAndStatus, findByProviderTransactionReference)
+- CustomOrderRequestRepository (findByUserId paginated, findByStatus, findByUserIdAndStatus)
+- CustomOrderImageRepository (findByCustomOrderRequestId, countByCustomOrderRequestId)
+- QuotationRepository (findByCustomOrderRequestId, findByStatus)
+- ShipmentRepository (findByOrderId, findByCustomOrderRequestId)
 
 Temporary dev security configuration in place (Phase 1 only — to be replaced in Phase 3).
 
-Build verification: mvn clean test — PASSED. 1 test, 0 failures, 0 errors (default profile). Phase 2D: 34 source files, 5 test files compiled. BUILD SUCCESS.
+Build verification: mvn clean test — PASSED. 1 test, 0 failures, 0 errors (default profile). Phase 2E: 45 source files, 6 test files compiled. BUILD SUCCESS.
 
 Live DB integration verification (Phase 2D): mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration — PASSED. Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Live DB integration verification (Phase 2E): mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration — PASSED. Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Frontend Status
 
@@ -180,7 +203,7 @@ PostgreSQL: DataSource configured, driver present, Flyway configured.
 
 Runtime DataSource auto-configuration: ENABLED.
 
-Flyway: V1, V2, V3 migration scripts present and applied.
+Flyway: V1–V5 migration scripts present and applied.
 
 Hibernate ddl-auto: none (Flyway owns schema).
 
@@ -190,10 +213,12 @@ Flyway V1 applied: VERIFIED.
 Flyway V2 applied: VERIFIED.
 Flyway V3 applied: VERIFIED — confirmed by developer during Phase 2C live integration run.
 Flyway V4 applied: VERIFIED — confirmed by developer during Phase 2D live integration run.
+Flyway V5 applied: VERIFIED — confirmed by developer during Phase 2E live integration run.
 
 JPA persistence (AppUser, Address): VERIFIED via db-integration tests.
 JPA persistence (Category, Product, ProductImage, ProductRelated, Inventory): VERIFIED — developer ran full db-integration suite against live PostgreSQL. Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 JPA persistence (Cart, CartItem, CustomerOrder, OrderItem, Payment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2D tests pass. BUILD SUCCESS.
+JPA persistence (CustomOrderRequest, CustomOrderImage, Quotation, Shipment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2E tests pass. BUILD SUCCESS.
 
 Database integration tests: Tagged @Tag("db-integration"). Run with:
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
@@ -209,12 +234,13 @@ Implementation not started.
 
 Test strategy approved.
 
-Tests implemented: 5 classes
+Tests implemented: 6 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
-- CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
+- CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests; updated for Phase 2E)
+- CustomArtworkPersistenceIntegrationTest (db-integration — Phase 2E: 29 tests)
 
 Tests executed (default profile): 1 (HandmadeArtEcommerceApplicationTests.contextLoads)
 
@@ -222,13 +248,17 @@ Tests passed (default profile): 1
 
 Tests failed (default profile): 0
 
-Database integration tests (Phase 2A + 2B + 2C + 2D): EXECUTED and PASSED.
+Database integration tests (Phase 2A–2D): EXECUTED and PASSED (Phase 2D verification run).
   Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
   Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
+Database integration tests (Phase 2A–2E): EXECUTED and PASSED.
+  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+  Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
 ## Current Known Issues
 
-No blocking issues for Phase 2E.
+No blocking issues for Phase 2F.
 
 DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
 
@@ -245,51 +275,59 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 2D — Commerce Database Model — COMPLETED and VERIFIED.
+Phase 2E — Custom Artwork Database Model — COMPLETED and VERIFIED.
+
+Build verification: `mvn clean test` — PASSED. 45 source files, 6 test files, 1 test, 0 failures. BUILD SUCCESS.
 
 Live database verification: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Result: Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
-Flyway V4 migration applied and verified against live PostgreSQL.
-All Phase 2A–2D database integration tests pass.
+Flyway V5 migration applied and verified against live PostgreSQL.
+All Phase 2A–2E database integration tests pass.
+
+Enums created (stubs existed; already complete): CustomOrderRequestStatus (13 values), QuotationStatus (4 values), ShipmentStatus (3 values).
+
+Entities created: CustomOrderRequest, CustomOrderImage, Quotation, Shipment.
+
+Entity modified: Payment — customOrderRequest upgraded from raw Long column to proper @ManyToOne FK (deferred FK added in V5 migration).
+
+Repositories created: CustomOrderRequestRepository, CustomOrderImageRepository, QuotationRepository, ShipmentRepository.
+
+Repository modified: PaymentRepository — added findByCustomOrderRequest method; removed stale note about raw Long.
+
+Migration created: V5__create_custom_artwork_tables.sql:
+- custom_order_request table (13-value CHECK constraint, reviewed_by FK, indexes on user_id and status)
+- custom_order_image table (ON DELETE CASCADE, file_size_bytes CHECK > 0, FK index)
+- quotation table (UNIQUE custom_order_request_id, quoted_amount/advance_amount CHECKs, expiry_at NOT NULL, composite index on status+expiry_at)
+- shipment table (dual-nullable-FK + mutual-exclusivity CHECK, 3-value status CHECK, FK indexes)
+- ALTER TABLE payment ADD CONSTRAINT fk_payment_custom_order_request (deferred from V4)
+
+Tests added: CustomArtworkPersistenceIntegrationTest — 29 db-integration tests.
+Tests modified: CommercePersistenceIntegrationTest — 2 tests updated for Phase 2E (Payment @ManyToOne upgrade).
+
+Files created:
+- backend/src/main/java/com/handmadeart/ecommerce/entity/CustomOrderRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/CustomOrderImage.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Quotation.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Shipment.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomOrderRequestRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomOrderImageRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/QuotationRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/ShipmentRepository.java
+- backend/src/main/resources/db/migration/V5__create_custom_artwork_tables.sql
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkPersistenceIntegrationTest.java
+
+Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Payment.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/PaymentRepository.java
+- backend/src/test/java/com/handmadeart/ecommerce/CommercePersistenceIntegrationTest.java
+- project-docs/DEVELOPMENT_STATUS.md
 
 ---
 
-Phase 2D — Commerce Database Model — Implementation summary:
+## Prior Last Completed Task (Phase 2D)
 
-Enums created: OrderStatus, PaymentStatus, PaymentPurpose.
-
-Entities created: Cart, CartItem, CustomerOrder, OrderItem, Payment.
-
-Repositories created: CartRepository, CartItemRepository, CustomerOrderRepository, OrderItemRepository, PaymentRepository.
-
-Migration created: V4__create_commerce_tables.sql (cart, cart_item, customer_order, order_item, payment tables with all approved constraints, FKs, indexes).
-
-Note: payment.custom_order_request_id FK to custom_order_request is deferred to V5 (Phase 2E) because the custom_order_request table does not yet exist. Column is created in V4 without FK constraint; FK added in V5.
-
-Tests added: CommercePersistenceIntegrationTest — 17 db-integration tests.
-
-Build: mvn clean test — PASSED. 34 source files, 5 test files, 1 test executed, 0 failures. BUILD SUCCESS.
-
-Files created:
-- backend/src/main/java/com/handmadeart/ecommerce/entity/OrderStatus.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/PaymentStatus.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/PaymentPurpose.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Cart.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/CartItem.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/CustomerOrder.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/OrderItem.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Payment.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CartRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CartItemRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomerOrderRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/OrderItemRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/PaymentRepository.java
-- backend/src/main/resources/db/migration/V4__create_commerce_tables.sql
-- backend/src/test/java/com/handmadeart/ecommerce/CommercePersistenceIntegrationTest.java
-
-Files modified:
-- project-docs/DEVELOPMENT_STATUS.md
+Phase 2D — Commerce Database Model — COMPLETED and VERIFIED.
 
 ## Prior Last Completed Task
 
@@ -330,10 +368,8 @@ Files modified:
 
 ## Current Task
 
-None. Phase 2D verification complete. Awaiting Phase 2E prompt.
+None. Phase 2E verification complete. Awaiting Phase 2F prompt.
 
 ## Next Recommended Task
 
-Phase 2E — Custom Artwork Database Model.
-
-Define JPA entities for CustomOrderRequest, CustomOrderImage, Quotation, and Shipment per the approved Database Design & ERD (Sections 3.13–3.16). Create Flyway migration V5. V5 must also add the deferred FK: payment.custom_order_request_id → custom_order_request(id).
+Phase 2F — Database Integration Validation.
