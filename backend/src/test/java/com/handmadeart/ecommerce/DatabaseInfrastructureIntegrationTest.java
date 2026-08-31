@@ -19,21 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   1. Spring Boot creates the DataSource successfully.
  *   2. A live JDBC connection to PostgreSQL can be established.
  *   3. Flyway runs and creates its schema_history table.
+ *   4. All V1–V5 migrations were applied successfully (Phase 2F validation).
  *
  * ACTIVATION:
  *   This test requires a running PostgreSQL instance.
  *   It is excluded from the default Maven test run (tag = "db-integration").
  *   Run explicitly with:
  *
- *     mvn clean test -Dgroups=db-integration -Dspring.profiles.active=db-integration
+ *     mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
  *
  *   Environment variables required:
  *     DB_URL       = jdbc:postgresql://localhost:5432/handmade_art_ecommerce_test
  *     DB_USERNAME  = <test db user>
  *     DB_PASSWORD  = <test db password>
  *
- * This test does NOT test domain repositories because no domain entities exist yet.
- * Domain-level persistence tests will be added in Phase 2B and beyond.
+ * Domain-level persistence tests live in Phase 2B–2E test classes.
  */
 @Tag("db-integration")
 @SpringBootTest
@@ -84,4 +84,39 @@ class DatabaseInfrastructureIntegrationTest {
         }
     }
 
+    /**
+     * Phase 2F — Migration chain validation.
+     *
+     * Verifies that all five approved Flyway migrations (V1–V5) were applied
+     * successfully in the correct sequence. This catches problems that would only
+     * surface on a clean schema (e.g., a missing migration, an out-of-order script,
+     * or a failed migration that was bypassed during incremental development).
+     *
+     * Covers: V1 baseline, V2 identity, V3 catalogue/inventory, V4 commerce,
+     *         V5 custom artwork + deferred FK (ERD §3.13–3.16, DEC-013 APPROVED).
+     */
+    @Test
+    void allFiveMigrationsAppliedSuccessfully() throws Exception {
+        String[] expectedVersions = {"1", "2", "3", "4", "5"};
+        try (Connection connection = dataSource.getConnection();
+             var stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(
+                     "SELECT version, success FROM flyway_schema_history " +
+                     "WHERE version IN ('1','2','3','4','5') " +
+                     "ORDER BY installed_rank")) {
+
+            int count = 0;
+            while (rs.next()) {
+                String version = rs.getString("version");
+                boolean success = rs.getBoolean("success");
+                assertThat(success)
+                        .as("Flyway migration V%s must have succeeded", version)
+                        .isTrue();
+                count++;
+            }
+            assertThat(count)
+                    .as("All 5 Flyway migrations (V1–V5) must be recorded in flyway_schema_history")
+                    .isEqualTo(expectedVersions.length);
+        }
+    }
 }

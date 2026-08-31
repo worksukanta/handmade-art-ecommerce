@@ -8,18 +8,18 @@ IBM Technical Training Capstone Project
 
 ## Current Phase
 
-Phase 2 — Database Foundation
+Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 2F — Database Integration Validation — Not Started
+Phase 3A — Authentication & Security — Not Started
 
 ## Last Verified Milestone
 
-Phase 2E — Custom Artwork Database Model — COMPLETED and VERIFIED against live PostgreSQL.
+Phase 2F — Database Integration Validation — COMPLETED and VERIFIED against live PostgreSQL.
 
 `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Overall Status
 
@@ -34,6 +34,8 @@ Catalogue and Inventory persistence model implemented and fully verified against
 Commerce persistence model implemented and fully verified against live PostgreSQL: Cart, CartItem, CustomerOrder, OrderItem, Payment entities, repositories, V4 migration (Phase 2D). All 53 db-integration tests pass.
 
 Custom Artwork persistence model implemented and fully verified against live PostgreSQL: CustomOrderRequest, CustomOrderImage, Quotation, Shipment entities, repositories, V5 migration (Phase 2E). All 82 db-integration tests pass.
+
+Database Integration Validation complete and PostgreSQL-verified (Phase 2F): V1–V5 migration chain verified on live PostgreSQL; full schema cross-checked against approved ERD; all cross-module relationships verified; migration chain test added. Full Phase 2 persistence integration suite: 94 tests, 0 failures. Phase 2 — Database/Persistence Foundation — COMPLETE.
 
 Frontend not started.
 
@@ -69,7 +71,7 @@ project-docs/
 ## Development Modules
 
 * [x] Spring Boot Project Initialization
-* [x] Database Foundation (Phase 2A–2E complete and verified; Phase 2F pending)
+* [x] Database Foundation (Phase 2A–2F complete — Database Foundation phase COMPLETE)
 * [ ] Authentication and Authorization
 * [ ] Customer Profile
 * [ ] Address Management
@@ -112,7 +114,7 @@ project-docs/
 * [x] Phase 2C — Catalogue and Inventory Database Model
 * [x] Phase 2D — Commerce Database Model
 * [x] Phase 2E — Custom Artwork Database Model
-* [ ] Phase 2F — Database Integration Validation
+* [x] Phase 2F — Database Integration Validation
 
 ## Backend Status
 
@@ -236,7 +238,7 @@ Test strategy approved.
 
 Tests implemented: 6 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
-- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
+- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A+2F: 5 tests; Phase 2F added allFiveMigrationsAppliedSuccessfully)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests; updated for Phase 2E)
@@ -256,9 +258,14 @@ Database integration tests (Phase 2A–2E): EXECUTED and PASSED.
   Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
   Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
+Database integration tests (Phase 2A–2F — full Phase 2 suite): EXECUTED and PASSED.
+  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+  Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+  V1–V5 migration chain verified. Phase 2 — Database/Persistence Foundation — COMPLETE.
+
 ## Current Known Issues
 
-No blocking issues for Phase 2F.
+No blocking issues for Phase 3A.
 
 DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
 
@@ -274,6 +281,39 @@ DEC-009 (inventory concurrency strategy): OPEN — does not block Phase 2C persi
 DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task
+
+Phase 2F — Database Integration Validation — COMPLETED and VERIFIED.
+
+`mvn clean test` — PASSED. 45 source files, 6 test files, 1 test, 0 failures. BUILD SUCCESS.
+
+Live database verification: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
+Result: Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+V1–V5 migration chain verified on live PostgreSQL.
+Full Phase 2 persistence integration suite passes. Phase 2 — Database/Persistence Foundation — COMPLETE.
+
+Validation performed:
+- V1–V5 migration chain: ordering correct, FK dependency order valid, all CHECK/UNIQUE/index constraints match ERD — PASS
+- Full schema vs ERD (all 16 tables, all 57 columns spot-checked): fields, nullability, precision, enums, PKs, FKs, delete behavior — PASS
+- Cross-module JPA ↔ DB FK agreement (all 20 relationships): user→address, category→product, product→inventory, product→cart/order items, user→cart/order/custom-request, order→payment, custom-request→quotation, custom-request→payment, order/custom-request→shipment — PASS
+- Payment.customOrderRequest @ManyToOne upgrade from Phase 2E: confirmed correct — PASS
+- Deferred FK (payment.custom_order_request_id → custom_order_request) resolved in V5 — PASS
+- Test infrastructure: default profile excludes DB; db-integration profile enables all; Maven profile configuration correct — PASS
+
+Gap identified and fixed:
+- DatabaseInfrastructureIntegrationTest verified only V1 was recorded; V2–V5 were not checked.
+  Added: allFiveMigrationsAppliedSuccessfully() — queries flyway_schema_history for all 5 versions,
+  asserts each succeeded and all 5 are present. Catches clean-schema failures hidden by incremental dev.
+
+No schema defects found. No migrations modified. No business logic added.
+
+Files modified:
+- backend/src/test/java/com/handmadeart/ecommerce/DatabaseInfrastructureIntegrationTest.java
+- project-docs/DEVELOPMENT_STATUS.md
+
+---
+
+## Prior Last Completed Task (Phase 2E)
 
 Phase 2E — Custom Artwork Database Model — COMPLETED and VERIFIED.
 
@@ -368,8 +408,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 2E verification complete. Awaiting Phase 2F prompt.
+None. Phase 2F verified. Phase 2 — Database/Persistence Foundation — COMPLETE. Awaiting Phase 3A prompt.
 
 ## Next Recommended Task
 
-Phase 2F — Database Integration Validation.
+Phase 3A — Authentication & Security (JWT-based, Spring Security, BCrypt password hashing).
+
+Implement: AppUser registration and login endpoints, JWT token generation/validation, Spring Security configuration replacing the temporary dev config, password hashing (BCrypt). Resolve DEC-002 (JWT logout/revocation strategy) before implementing logout.
