@@ -10,6 +10,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.Generated;
+import org.hibernate.generator.EventType;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -82,11 +84,21 @@ public class AppUser {
     @Column(name = "role", nullable = false, length = 10)
     private UserRole role;
 
-    @Column(name = "created_at", nullable = false, updatable = false,
+    // DB DEFAULT now() is authoritative for creation time.
+    // insertable = false: Hibernate omits this column from INSERT so the DB DEFAULT fires.
+    // @Generated(INSERT): instructs Hibernate to re-SELECT this column after INSERT
+    // so the Java field is populated with the DB-assigned value.
+    @Generated(event = EventType.INSERT)
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false,
             columnDefinition = "TIMESTAMPTZ DEFAULT now()")
     private OffsetDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false,
+    // DB DEFAULT now() seeds updated_at on INSERT.
+    // Application code must set this field before UPDATE operations (Phase 3+).
+    // @Generated(INSERT, UPDATE): Hibernate re-SELECTs after both INSERT and UPDATE
+    // so the Java field reflects whatever value PostgreSQL holds.
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false,
             columnDefinition = "TIMESTAMPTZ DEFAULT now()")
     private OffsetDateTime updatedAt;
 

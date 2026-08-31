@@ -110,4 +110,30 @@
         </plugins>
     </build>
 
+    <!--
+        Maven profile for running database integration tests.
+        Clears the db-integration group exclusion so the tagged tests execute.
+        Usage:
+          mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+        Environment variables required: DB_URL, DB_USERNAME, DB_PASSWORD
+    -->
+    <profiles>
+        <profile>
+            <id>db-integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                            <!-- Override replaces entire Surefire config, clearing excludedGroups -->
+                            <groups>db-integration</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

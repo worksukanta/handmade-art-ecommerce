@@ -5,6 +5,8 @@ import com.handmadeart.ecommerce.entity.AppUser;
 import com.handmadeart.ecommerce.entity.UserRole;
 import com.handmadeart.ecommerce.repository.AddressRepository;
 import com.handmadeart.ecommerce.repository.AppUserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("db-integration")
 class IdentityPersistenceIntegrationTest {
+
+    @PersistenceContext
+    private EntityManager em;
 
     @Autowired
     private AppUserRepository userRepository;
@@ -246,9 +251,26 @@ class IdentityPersistenceIntegrationTest {
         AppUser user = userRepository.save(buildUser("cascade_delete", UserRole.CUSTOMER));
         Address addr = addressRepository.saveAndFlush(buildAddress(user, false));
         Long addressId = addr.getId();
+        Long userId = user.getId();
 
-        userRepository.deleteById(user.getId());
+        // Flush all pending state to the DB and clear the persistence context BEFORE
+        // deleting the parent. The managed Address entity in the session holds a reference
+        // to the managed AppUser. If the AppUser is marked REMOVED while Address is still
+        // MANAGED in the same session, Hibernate throws TransientObjectException during
+        // the delete flush (Address.user field still points to a REMOVED entity).
+        // Clearing first detaches both entities; deleteById then reloads only the AppUser
+        // from the DB, marks it REMOVED, and flushes — PostgreSQL ON DELETE CASCADE
+        // (V2 FK: address.user_id REFERENCES app_user ON DELETE CASCADE) removes the
+        // address row at the DB level.
+        em.flush();
+        em.clear();
+
+        userRepository.deleteById(userId);
         userRepository.flush();
+
+        // Clear again so the subsequent findById issues a fresh SELECT rather than
+        // hitting any remaining persistence-context state.
+        em.clear();
 
         assertThat(addressRepository.findById(addressId)).isEmpty();
     }

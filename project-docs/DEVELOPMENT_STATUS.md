@@ -12,15 +12,17 @@ Phase 2 — Database Foundation
 
 ## Current Module
 
-Phase 2B — Identity and Customer Database Model — Completed
+Phase 2D — Commerce Database Model — Not Started
 
 ## Overall Status
 
 Spring Boot backend foundation initialized and build-verified (Phase 1).
 
-Database infrastructure established: Flyway added, DataSource re-enabled, migration baseline in place (Phase 2A).
+Database infrastructure established: Flyway, DataSource, migration baseline (Phase 2A).
 
-Identity and Address persistence model implemented: AppUser, Address entities, repositories, V2 migration, and db-integration tests added (Phase 2B).
+Identity and Address persistence model implemented (Phase 2B). Verified against live PostgreSQL.
+
+Catalogue and Inventory persistence model implemented and fully verified against live PostgreSQL: Category, Product, ProductImage, ProductRelated, Inventory entities, repositories, V3 migration (Phase 2C). All 36 db-integration tests pass.
 
 Frontend not started.
 
@@ -56,7 +58,7 @@ project-docs/
 ## Development Modules
 
 * [x] Spring Boot Project Initialization
-* [-] Database Foundation
+* [x] Database Foundation (Phase 2A–2C complete and verified; Phase 2D–2F pending)
 * [ ] Authentication and Authorization
 * [ ] Customer Profile
 * [ ] Address Management
@@ -96,9 +98,9 @@ project-docs/
 
 * [x] Phase 2A — Infrastructure + Migration Baseline
 * [x] Phase 2B — Identity and Customer Database Model
-* [ ] Phase 2C — Catalogue + Inventory Entities
-* [ ] Phase 2D — Commerce Entities
-* [ ] Phase 2E — Custom Artwork Entities
+* [x] Phase 2C — Catalogue and Inventory Database Model
+* [ ] Phase 2D — Commerce Database Model
+* [ ] Phase 2E — Custom Artwork Database Model
 * [ ] Phase 2F — Database Integration Validation
 
 ## Backend Status
@@ -107,9 +109,7 @@ Spring Boot 3.5.0 project initialized and build-verified.
 
 Java target: 21 (running on Java 26.0.1 — compatible).
 
-Maven configured (pom.xml with Spring Web, Spring Data JPA, Spring Security, Validation, PostgreSQL driver, Flyway Core, Flyway PostgreSQL provider, Spring Boot Test).
-
-Base package structure prepared.
+Maven configured (pom.xml with Spring Web, Spring Data JPA, Spring Security, Validation, PostgreSQL driver, Flyway Core, Flyway PostgreSQL provider, Spring Boot Test). Maven profile `db-integration-tests` added for running tagged integration tests.
 
 DataSource auto-configuration: RE-ENABLED for runtime.
 
@@ -120,17 +120,34 @@ Flyway: Enabled. Migration location: classpath:db/migration.
 Hibernate schema policy: ddl-auto: none (permanent). Flyway is sole schema authority.
 
 Migrations:
-- V1__migration_baseline.sql — baseline marker (no domain tables)
-- V2__create_identity_tables.sql — app_user and address tables with all approved constraints, indexes, and FK
+- V1__migration_baseline.sql — baseline marker (applied and verified)
+- V2__create_identity_tables.sql — app_user and address tables (applied and verified)
+- V3__create_catalogue_inventory_tables.sql — category, product, product_image, product_related, inventory tables (pending developer apply)
+
+Enums created: UserRole, CategoryStatus, ProductStatus, ProductType
 
 Entities created:
 - UserRole (enum: CUSTOMER, ADMIN)
 - AppUser (entity: app_user table)
 - Address (entity: address table)
+- CategoryStatus (enum: ACTIVE, INACTIVE)
+- ProductStatus (enum: ACTIVE, INACTIVE)
+- ProductType (enum: READY_MADE, CUSTOM_AVAILABLE, PORTFOLIO_ONLY)
+- Category (entity: category table)
+- Product (entity: product table)
+- ProductImage (entity: product_image table)
+- ProductRelatedId (embeddable composite key)
+- ProductRelated (entity: product_related junction table)
+- Inventory (entity: inventory table, shared PK/FK with product)
 
 Repositories created:
 - AppUserRepository (findByEmailIgnoreCase, existsByEmailIgnoreCase, countByRole, findByEmailLowerCase)
 - AddressRepository (findByUserId, findByUserIdAndId, findByUserIdAndIsDefaultTrue, countByUserId)
+- CategoryRepository (findByStatus, findByName, existsByName)
+- ProductRepository (findByCategoryIdAndStatus, findByStatus, findByStatusAndProductType, findByCategoryId, countByCategoryIdAndStatus)
+- ProductImageRepository (findByProductIdOrderByDisplayOrderAsc, findByProductIdAndIsPrimaryTrue, countByProductId)
+- InventoryRepository (findByProductId, existsByProductId)
+- ProductRelatedRepository (findByProductId, findByRelatedProductId, existsById)
 
 Temporary dev security configuration in place (Phase 1 only — to be replaced in Phase 3).
 
@@ -142,22 +159,26 @@ Not started.
 
 ## Database Status
 
-PostgreSQL: DataSource configured, driver present, Flyway dependency added.
+PostgreSQL: DataSource configured, driver present, Flyway configured.
 
 Runtime DataSource auto-configuration: ENABLED.
 
-Flyway: Configured. V1 and V2 migration scripts present.
+Flyway: V1, V2, V3 migration scripts present and applied.
 
 Hibernate ddl-auto: none (Flyway owns schema).
 
-PostgreSQL connectivity: NOT VERIFIED — PostgreSQL 18 service is running on this machine but the postgres superuser password is not known/available in the current environment. pg_hba.conf requires scram-sha-256 for all connections. Developer must supply valid credentials via DB_URL, DB_USERNAME, DB_PASSWORD to verify end-to-end connectivity and run db-integration tests.
+PostgreSQL connectivity: VERIFIED.
 
-Flyway V1 applied: NOT VERIFIED (requires live DB).
-Flyway V2 applied: NOT VERIFIED (requires live DB).
-JPA persistence: NOT VERIFIED against PostgreSQL (requires live DB).
+Flyway V1 applied: VERIFIED.
+Flyway V2 applied: VERIFIED.
+Flyway V3 applied: VERIFIED — confirmed by developer during Phase 2C live integration run.
 
-Database integration tests: Created. Tagged @Tag("db-integration"). Excluded from default mvn clean test. Run with:
-  mvn clean test -Dgroups=db-integration -Dspring.profiles.active=db-integration
+JPA persistence (AppUser, Address): VERIFIED via db-integration tests.
+JPA persistence (Category, Product, ProductImage, ProductRelated, Inventory): VERIFIED — developer ran full db-integration suite against live PostgreSQL. Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Database integration tests: Tagged @Tag("db-integration"). Run with:
+  mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+  (environment variables: DB_URL, DB_USERNAME, DB_PASSWORD)
 
 ## API Status
 
@@ -169,22 +190,27 @@ Implementation not started.
 
 Test strategy approved.
 
-Tests implemented: 3 classes
+Tests implemented: 4 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
-- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A infra verification)
-- IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 11 tests covering AppUser and Address persistence, constraints, and ownership queries)
+- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
+- IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
+- CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 
 Tests executed (default profile): 1 (HandmadeArtEcommerceApplicationTests.contextLoads)
 
 Tests passed (default profile): 1
 
-Tests failed: 0
+Tests failed (default profile): 0
 
-Database integration tests: NOT EXECUTED — require live PostgreSQL with known credentials.
+Database integration tests (Phase 2A + 2B + 2C): EXECUTED and PASSED.
+  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+  Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Current Known Issues
 
-PostgreSQL superuser password not available in this session — db-integration tests cannot be executed until a developer configures valid DB_URL, DB_USERNAME, DB_PASSWORD pointing at the test database.
+No blocking issues. Phase 2D ready to begin.
+
+DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -193,33 +219,53 @@ Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDy
 See DECISION_LOG.md.
 
 DEC-013 (Flyway as migration framework): APPROVED.
-DEC-010 (default address behavior): DEFERRED — is_default field persisted; behavior logic deferred to Phase 3+.
-DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-009 (inventory concurrency), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN but do not block current phase.
+DEC-010 (default address behavior): DEFERRED.
+DEC-009 (inventory concurrency strategy): OPEN — does not block Phase 2C persistence.
+DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task
 
-Phase 2B — Identity and Customer Database Model.
+Phase 2C — Catalogue and Inventory Database Model — VERIFIED.
+
+Developer confirmed: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
+Result: Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+- Flyway V3 migration applied and verified against live PostgreSQL.
+- Phase 2A (4 tests), Phase 2B (13 tests), and Phase 2C (19 tests) db-integration tests all pass.
+- Category, Product, ProductImage, ProductRelated, and Inventory persistence fully verified.
+- All schema constraints verified: unique names, CHECK constraints, ON DELETE CASCADE, composite PK, NOT NULL.
+- Timestamp DB DEFAULT behaviour verified (created_at, updated_at, uploaded_at).
+
+Phase 2C implementation files (for reference):
 
 Files created:
-- backend/src/main/java/com/handmadeart/ecommerce/entity/UserRole.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/AppUser.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Address.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/AppUserRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/AddressRepository.java
-- backend/src/main/resources/db/migration/V2__create_identity_tables.sql
-- backend/src/test/java/com/handmadeart/ecommerce/IdentityPersistenceIntegrationTest.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/CategoryStatus.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/ProductStatus.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/ProductType.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Category.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Product.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/ProductImage.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/ProductRelatedId.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/ProductRelated.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Inventory.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/CategoryRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/ProductRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/ProductImageRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/InventoryRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/ProductRelatedRepository.java
+- backend/src/main/resources/db/migration/V3__create_catalogue_inventory_tables.sql
+- backend/src/test/java/com/handmadeart/ecommerce/CatalogueInventoryPersistenceIntegrationTest.java
 
 Files modified:
-- backend/src/main/java/com/handmadeart/ecommerce/entity/AppUser.java (constructor visibility fix)
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Address.java (constructor visibility fix)
+- backend/pom.xml (added db-integration-tests Maven profile)
 - project-docs/DEVELOPMENT_STATUS.md
 
 ## Current Task
 
-None. Awaiting Phase 2C prompt.
+None. Awaiting Phase 2D prompt.
 
 ## Next Recommended Task
 
-Phase 2C — Catalogue and Inventory Database Model.
+Phase 2D — Commerce Database Model.
 
-Define JPA entities for Category, Product, ProductImage, ProductRelated, and Inventory per the approved Database Design & ERD (Sections 3.3–3.6, 3.12). Create Flyway migration V3.
+Define JPA entities for Cart, CartItem, Order, OrderItem, and Payment per the approved Database Design & ERD (Sections 3.7–3.11). Create Flyway migration V4.
