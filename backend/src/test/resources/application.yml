@@ -19,3 +19,10 @@ spring:
       - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
       - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+
+# JWT test configuration — deterministic values for unit/MockMvc tests.
+# Short expiration (1 hour) is fine for tests; expired-token tests use negative ms programmatically.
+app:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci1oYW5kbWFkZWFydC11bml0LXRlc3Rpbmc=
+    expiration-ms: 3600000

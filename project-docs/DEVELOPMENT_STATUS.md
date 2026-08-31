@@ -12,14 +12,14 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3A — Authentication & Security — Not Started
+Phase 3A.1 — Authentication Foundation (Register, Login, JWT) — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 2F — Database Integration Validation — COMPLETED and VERIFIED against live PostgreSQL.
+Phase 3A.1 — Authentication Foundation — COMPLETED and VERIFIED.
 
-`mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+`mvn clean test`
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Overall Status
 
@@ -33,9 +33,7 @@ Catalogue and Inventory persistence model implemented and fully verified against
 
 Commerce persistence model implemented and fully verified against live PostgreSQL: Cart, CartItem, CustomerOrder, OrderItem, Payment entities, repositories, V4 migration (Phase 2D). All 53 db-integration tests pass.
 
-Custom Artwork persistence model implemented and fully verified against live PostgreSQL: CustomOrderRequest, CustomOrderImage, Quotation, Shipment entities, repositories, V5 migration (Phase 2E). All 82 db-integration tests pass.
-
-Database Integration Validation complete and PostgreSQL-verified (Phase 2F): V1–V5 migration chain verified on live PostgreSQL; full schema cross-checked against approved ERD; all cross-module relationships verified; migration chain test added. Full Phase 2 persistence integration suite: 94 tests, 0 failures. Phase 2 — Database/Persistence Foundation — COMPLETE.
+Phase 3A.1 — Authentication Foundation implemented: Spring Security (JWT-based stateless), BCrypt password hashing, customer registration, login, JWT generation/validation, authenticated-user resolution, error handling. Temporary DevSecurityConfig replaced. All 22 tests pass (default profile, no PostgreSQL required): 13 controller MockMvc tests + 8 AuthService unit tests + 1 contextLoads.
 
 Frontend not started.
 
@@ -72,7 +70,7 @@ project-docs/
 
 * [x] Spring Boot Project Initialization
 * [x] Database Foundation (Phase 2A–2F complete — Database Foundation phase COMPLETE)
-* [ ] Authentication and Authorization
+* [-] Authentication and Authorization (Phase 3A.1 complete — Phase 3A.2 not started)
 * [ ] Customer Profile
 * [ ] Address Management
 * [ ] Categories
@@ -113,8 +111,8 @@ project-docs/
 * [x] Phase 2B — Identity and Customer Database Model
 * [x] Phase 2C — Catalogue and Inventory Database Model
 * [x] Phase 2D — Commerce Database Model
-* [x] Phase 2E — Custom Artwork Database Model
-* [x] Phase 2F — Database Integration Validation
+* [ ] Phase 2E — Custom Artwork Database Model
+* [ ] Phase 2F — Database Integration Validation
 
 ## Backend Status
 
@@ -137,9 +135,9 @@ Migrations:
 - V2__create_identity_tables.sql — app_user and address tables (applied and verified)
 - V3__create_catalogue_inventory_tables.sql — category, product, product_image, product_related, inventory tables (applied and verified)
 - V4__create_commerce_tables.sql — cart, cart_item, customer_order, order_item, payment tables (applied and verified)
-- V5__create_custom_artwork_tables.sql — custom_order_request, custom_order_image, quotation, shipment tables; deferred FK payment.custom_order_request_id (applied and verified)
 
-Enums created: UserRole, CategoryStatus, ProductStatus, ProductType, OrderStatus, PaymentStatus, PaymentPurpose, CustomOrderRequestStatus, QuotationStatus, ShipmentStatus
+Enums created: UserRole, CategoryStatus, ProductStatus, ProductType, OrderStatus, PaymentStatus, PaymentPurpose
+Enum stubs present (not yet implemented): CustomOrderRequestStatus, QuotationStatus, ShipmentStatus
 
 Entities created:
 - UserRole (enum: CUSTOMER, ADMIN)
@@ -161,14 +159,7 @@ Entities created:
 - CartItem (entity: cart_item table)
 - CustomerOrder (entity: customer_order table)
 - OrderItem (entity: order_item table)
-- Payment (entity: payment table — Phase 2E: customOrderRequest upgraded to @ManyToOne)
-- CustomOrderRequestStatus (enum: 13 lifecycle values)
-- QuotationStatus (enum: PENDING, APPROVED, REJECTED, EXPIRED)
-- ShipmentStatus (enum: PENDING, SHIPPED, DELIVERED)
-- CustomOrderRequest (entity: custom_order_request table)
-- CustomOrderImage (entity: custom_order_image table)
-- Quotation (entity: quotation table)
-- Shipment (entity: shipment table)
+- Payment (entity: payment table)
 
 Repositories created:
 - AppUserRepository (findByEmailIgnoreCase, existsByEmailIgnoreCase, countByRole, findByEmailLowerCase)
@@ -182,18 +173,21 @@ Repositories created:
 - CartItemRepository (findByCartId, findByCartIdAndProductId, countByCartId, deleteByCartId)
 - CustomerOrderRepository (findByUserId paginated, findByStatus paginated, findByUserIdAndStatus)
 - OrderItemRepository (findByOrderId, countByOrderId)
-- PaymentRepository (findByOrderId, findByCustomOrderRequestId, findByCustomOrderRequest, findByOrderIdAndStatus, findByProviderTransactionReference)
-- CustomOrderRequestRepository (findByUserId paginated, findByStatus, findByUserIdAndStatus)
-- CustomOrderImageRepository (findByCustomOrderRequestId, countByCustomOrderRequestId)
-- QuotationRepository (findByCustomOrderRequestId, findByStatus)
-- ShipmentRepository (findByOrderId, findByCustomOrderRequestId)
+- PaymentRepository (findByOrderId, findByCustomOrderRequestId, findByOrderIdAndStatus, findByProviderTransactionReference)
 
-Temporary dev security configuration in place (Phase 1 only — to be replaced in Phase 3).
+Phase 3A.1 authentication components:
+- Security: DevSecurityConfig replaced by SecurityConfig (JWT-stateless, CSRF disabled, public routes: /register + /login)
+- Security: AppUserDetailsService (loads AppUser by email, case-insensitive)
+- Security: JwtService (HMAC-SHA256, externalized secret + expiry via app.jwt.secret / app.jwt.expiration-ms)
+- Security: JwtAuthenticationFilter (Bearer token extraction and validation per request)
+- Security: AuthEntryPoint (structured JSON 401 for unauthenticated requests)
+- Service: AuthService (register → CUSTOMER only; login → BadCredentialsException on failure; getCurrentUser)
+- Controller: AuthController (POST /api/v1/auth/register, POST /api/v1/auth/login, GET /api/v1/auth/me)
+- DTOs: RegisterRequest, LoginRequest, UserResponse, LoginResponse (password_hash never included)
+- Exceptions: ApiError (error envelope per SDD §12.2), DuplicateEmailException, GlobalExceptionHandler
+- Config: app.jwt.secret and app.jwt.expiration-ms externalized; no hardcoded secrets
 
-Build verification: mvn clean test — PASSED. 1 test, 0 failures, 0 errors (default profile). Phase 2E: 45 source files, 6 test files compiled. BUILD SUCCESS.
-
-Live DB integration verification (Phase 2D): mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration — PASSED. Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-Live DB integration verification (Phase 2E): mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration — PASSED. Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Build verification: mvn clean test — PASSED. 14 tests, 0 failures, 0 errors (default profile). BUILD SUCCESS.
 
 ## Frontend Status
 
@@ -205,7 +199,7 @@ PostgreSQL: DataSource configured, driver present, Flyway configured.
 
 Runtime DataSource auto-configuration: ENABLED.
 
-Flyway: V1–V5 migration scripts present and applied.
+Flyway: V1–V4 migration scripts present and applied. V5 not yet created.
 
 Hibernate ddl-auto: none (Flyway owns schema).
 
@@ -215,12 +209,10 @@ Flyway V1 applied: VERIFIED.
 Flyway V2 applied: VERIFIED.
 Flyway V3 applied: VERIFIED — confirmed by developer during Phase 2C live integration run.
 Flyway V4 applied: VERIFIED — confirmed by developer during Phase 2D live integration run.
-Flyway V5 applied: VERIFIED — confirmed by developer during Phase 2E live integration run.
 
 JPA persistence (AppUser, Address): VERIFIED via db-integration tests.
 JPA persistence (Category, Product, ProductImage, ProductRelated, Inventory): VERIFIED — developer ran full db-integration suite against live PostgreSQL. Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-JPA persistence (Cart, CartItem, CustomerOrder, OrderItem, Payment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2D tests pass. BUILD SUCCESS.
-JPA persistence (CustomOrderRequest, CustomOrderImage, Quotation, Shipment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2E tests pass. BUILD SUCCESS.
+JPA persistence (Cart, CartItem, CustomerOrder, OrderItem, Payment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2D tests pass. Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 Database integration tests: Tagged @Tag("db-integration"). Run with:
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
@@ -230,7 +222,10 @@ Database integration tests: Tagged @Tag("db-integration"). Run with:
 
 REST API contract approved.
 
-Implementation not started.
+Implemented (Phase 3A.1):
+- POST /api/v1/auth/register — 201 + UserResponse; 400 validation; 409 duplicate email
+- POST /api/v1/auth/login   — 200 + LoginResponse (access token + user summary); 400; 401
+- GET  /api/v1/auth/me      — 200 + UserResponse; 401 unauthenticated
 
 ## Testing Status
 
@@ -238,34 +233,25 @@ Test strategy approved.
 
 Tests implemented: 6 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
-- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A+2F: 5 tests; Phase 2F added allFiveMigrationsAppliedSuccessfully)
+- AuthControllerTest (default profile — Phase 3A.1: 13 tests)
+- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
-- CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests; updated for Phase 2E)
-- CustomArtworkPersistenceIntegrationTest (db-integration — Phase 2E: 29 tests)
+- CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 1 (HandmadeArtEcommerceApplicationTests.contextLoads)
+Tests executed (default profile): 14 (Phase 3A.1 verification run)
 
-Tests passed (default profile): 1
+Tests passed (default profile): 14
 
 Tests failed (default profile): 0
 
-Database integration tests (Phase 2A–2D): EXECUTED and PASSED (Phase 2D verification run).
+Database integration tests (Phase 2A–2D): EXECUTED and PASSED (prior phase verification).
   Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
-  Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-
-Database integration tests (Phase 2A–2E): EXECUTED and PASSED.
-  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
-  Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-
-Database integration tests (Phase 2A–2F — full Phase 2 suite): EXECUTED and PASSED.
-  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
-  Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-  V1–V5 migration chain verified. Phase 2 — Database/Persistence Foundation — COMPLETE.
+  Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3A.
+No blocking issues for Phase 3A.2.
 
 DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
 
@@ -282,92 +268,48 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 2F — Database Integration Validation — COMPLETED and VERIFIED.
+Phase 3A.1 — Authentication Foundation — COMPLETED and VERIFIED (test-quality review passed).
 
-`mvn clean test` — PASSED. 45 source files, 6 test files, 1 test, 0 failures. BUILD SUCCESS.
-
-Live database verification: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Result: Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-
-V1–V5 migration chain verified on live PostgreSQL.
-Full Phase 2 persistence integration suite passes. Phase 2 — Database/Persistence Foundation — COMPLETE.
-
-Validation performed:
-- V1–V5 migration chain: ordering correct, FK dependency order valid, all CHECK/UNIQUE/index constraints match ERD — PASS
-- Full schema vs ERD (all 16 tables, all 57 columns spot-checked): fields, nullability, precision, enums, PKs, FKs, delete behavior — PASS
-- Cross-module JPA ↔ DB FK agreement (all 20 relationships): user→address, category→product, product→inventory, product→cart/order items, user→cart/order/custom-request, order→payment, custom-request→quotation, custom-request→payment, order/custom-request→shipment — PASS
-- Payment.customOrderRequest @ManyToOne upgrade from Phase 2E: confirmed correct — PASS
-- Deferred FK (payment.custom_order_request_id → custom_order_request) resolved in V5 — PASS
-- Test infrastructure: default profile excludes DB; db-integration profile enables all; Maven profile configuration correct — PASS
-
-Gap identified and fixed:
-- DatabaseInfrastructureIntegrationTest verified only V1 was recorded; V2–V5 were not checked.
-  Added: allFiveMigrationsAppliedSuccessfully() — queries flyway_schema_history for all 5 versions,
-  asserts each succeeded and all 5 are present. Catches clean-schema failures hidden by incremental dev.
-
-No schema defects found. No migrations modified. No business logic added.
-
-Files modified:
-- backend/src/test/java/com/handmadeart/ecommerce/DatabaseInfrastructureIntegrationTest.java
-- project-docs/DEVELOPMENT_STATUS.md
-
----
-
-## Prior Last Completed Task (Phase 2E)
-
-Phase 2E — Custom Artwork Database Model — COMPLETED and VERIFIED.
-
-Build verification: `mvn clean test` — PASSED. 45 source files, 6 test files, 1 test, 0 failures. BUILD SUCCESS.
-
-Live database verification: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Result: Tests run: 82, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-
-Flyway V5 migration applied and verified against live PostgreSQL.
-All Phase 2A–2E database integration tests pass.
-
-Enums created (stubs existed; already complete): CustomOrderRequestStatus (13 values), QuotationStatus (4 values), ShipmentStatus (3 values).
-
-Entities created: CustomOrderRequest, CustomOrderImage, Quotation, Shipment.
-
-Entity modified: Payment — customOrderRequest upgraded from raw Long column to proper @ManyToOne FK (deferred FK added in V5 migration).
-
-Repositories created: CustomOrderRequestRepository, CustomOrderImageRepository, QuotationRepository, ShipmentRepository.
-
-Repository modified: PaymentRepository — added findByCustomOrderRequest method; removed stale note about raw Long.
-
-Migration created: V5__create_custom_artwork_tables.sql:
-- custom_order_request table (13-value CHECK constraint, reviewed_by FK, indexes on user_id and status)
-- custom_order_image table (ON DELETE CASCADE, file_size_bytes CHECK > 0, FK index)
-- quotation table (UNIQUE custom_order_request_id, quoted_amount/advance_amount CHECKs, expiry_at NOT NULL, composite index on status+expiry_at)
-- shipment table (dual-nullable-FK + mutual-exclusivity CHECK, 3-value status CHECK, FK indexes)
-- ALTER TABLE payment ADD CONSTRAINT fk_payment_custom_order_request (deferred from V4)
-
-Tests added: CustomArtworkPersistenceIntegrationTest — 29 db-integration tests.
-Tests modified: CommercePersistenceIntegrationTest — 2 tests updated for Phase 2E (Payment @ManyToOne upgrade).
+Build verification: `mvn clean test`
+Result: Tests run: 22, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 Files created:
-- backend/src/main/java/com/handmadeart/ecommerce/entity/CustomOrderRequest.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/CustomOrderImage.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Quotation.java
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Shipment.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomOrderRequestRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomOrderImageRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/QuotationRepository.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/ShipmentRepository.java
-- backend/src/main/resources/db/migration/V5__create_custom_artwork_tables.sql
-- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkPersistenceIntegrationTest.java
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
+- backend/src/main/java/com/handmadeart/ecommerce/security/JwtService.java
+- backend/src/main/java/com/handmadeart/ecommerce/security/AppUserDetailsService.java
+- backend/src/main/java/com/handmadeart/ecommerce/security/JwtAuthenticationFilter.java
+- backend/src/main/java/com/handmadeart/ecommerce/security/AuthEntryPoint.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AuthService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AuthController.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/RegisterRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/LoginRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/UserResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/LoginResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/ApiError.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/DuplicateEmailException.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java
+- backend/src/test/java/com/handmadeart/ecommerce/AuthControllerTest.java (13 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/AuthServiceTest.java (8 tests)
 
 Files modified:
-- backend/src/main/java/com/handmadeart/ecommerce/entity/Payment.java
-- backend/src/main/java/com/handmadeart/ecommerce/repository/PaymentRepository.java
-- backend/src/test/java/com/handmadeart/ecommerce/CommercePersistenceIntegrationTest.java
+- backend/pom.xml (added JJWT 0.12.6)
+- backend/src/main/resources/application.yml (added app.jwt.secret + app.jwt.expiration-ms)
+- backend/src/test/resources/application.yml (added test JWT properties)
+- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java
 - project-docs/DEVELOPMENT_STATUS.md
 
----
+Files deleted:
+- backend/src/main/java/com/handmadeart/ecommerce/config/DevSecurityConfig.java
 
 ## Prior Last Completed Task (Phase 2D)
 
 Phase 2D — Commerce Database Model — COMPLETED and VERIFIED.
+
+Live database verification: `mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
+Result: Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Flyway V4 migration applied and verified against live PostgreSQL.
+All Phase 2A–2D database integration tests pass.
 
 ## Prior Last Completed Task
 
@@ -408,10 +350,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 2F verified. Phase 2 — Database/Persistence Foundation — COMPLETE. Awaiting Phase 3A prompt.
+None. Phase 3A.1 complete. Awaiting Phase 3A.2 prompt.
 
 ## Next Recommended Task
 
-Phase 3A — Authentication & Security (JWT-based, Spring Security, BCrypt password hashing).
+Phase 3A.2 — Full Endpoint Authorization.
 
-Implement: AppUser registration and login endpoints, JWT token generation/validation, Spring Security configuration replacing the temporary dev config, password hashing (BCrypt). Resolve DEC-002 (JWT logout/revocation strategy) before implementing logout.
+Apply role-based and ownership-based access control to all implemented endpoints as modules are added. Configure ADMIN-only and CUSTOMER-only route rules in SecurityConfig. Implement method-level security where required. DEC-002 (JWT logout/revocation) remains OPEN — resolve before implementing logout.
