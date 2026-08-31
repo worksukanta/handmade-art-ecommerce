@@ -12,13 +12,15 @@ Phase 2 — Database Foundation
 
 ## Current Module
 
-Phase 2A — PostgreSQL Infrastructure + Migration Baseline — Completed
+Phase 2B — Identity and Customer Database Model — Completed
 
 ## Overall Status
 
 Spring Boot backend foundation initialized and build-verified (Phase 1).
 
 Database infrastructure established: Flyway added, DataSource re-enabled, migration baseline in place (Phase 2A).
+
+Identity and Address persistence model implemented: AppUser, Address entities, repositories, V2 migration, and db-integration tests added (Phase 2B).
 
 Frontend not started.
 
@@ -93,7 +95,7 @@ project-docs/
 ## Database Foundation Progress
 
 * [x] Phase 2A — Infrastructure + Migration Baseline
-* [ ] Phase 2B — Identity Entities
+* [x] Phase 2B — Identity and Customer Database Model
 * [ ] Phase 2C — Catalogue + Inventory Entities
 * [ ] Phase 2D — Commerce Entities
 * [ ] Phase 2E — Custom Artwork Entities
@@ -107,19 +109,28 @@ Java target: 21 (running on Java 26.0.1 — compatible).
 
 Maven configured (pom.xml with Spring Web, Spring Data JPA, Spring Security, Validation, PostgreSQL driver, Flyway Core, Flyway PostgreSQL provider, Spring Boot Test).
 
-Base package structure prepared: com.handmadeart.ecommerce with config, controller, dto/request, dto/response, entity, exception, repository, security, service, util.
+Base package structure prepared.
 
-DataSource auto-configuration: RE-ENABLED for runtime. DataSource and Flyway excluded in default test profile only (no PostgreSQL required for context-load and unit tests).
+DataSource auto-configuration: RE-ENABLED for runtime.
 
-PostgreSQL database name: handmade_art_ecommerce. Connection parameters via environment variables: DB_URL, DB_USERNAME, DB_PASSWORD.
+PostgreSQL database name: handmade_art_ecommerce. Connection via DB_URL, DB_USERNAME, DB_PASSWORD.
 
-Flyway: Added (flyway-core + flyway-database-postgresql). Enabled in runtime and db-integration test profile. Disabled in default test profile. Migration location: classpath:db/migration.
+Flyway: Enabled. Migration location: classpath:db/migration.
 
-Hibernate schema policy: ddl-auto: none (permanent). Flyway is sole schema authority. Hibernate will not create/mutate schema.
+Hibernate schema policy: ddl-auto: none (permanent). Flyway is sole schema authority.
 
-Migration baseline: V1__migration_baseline.sql created. No domain tables yet (domain schema begins Phase 2B).
+Migrations:
+- V1__migration_baseline.sql — baseline marker (no domain tables)
+- V2__create_identity_tables.sql — app_user and address tables with all approved constraints, indexes, and FK
 
-Migration naming convention: V<version>__<lowercase_description>.sql
+Entities created:
+- UserRole (enum: CUSTOMER, ADMIN)
+- AppUser (entity: app_user table)
+- Address (entity: address table)
+
+Repositories created:
+- AppUserRepository (findByEmailIgnoreCase, existsByEmailIgnoreCase, countByRole, findByEmailLowerCase)
+- AddressRepository (findByUserId, findByUserIdAndId, findByUserIdAndIsDefaultTrue, countByUserId)
 
 Temporary dev security configuration in place (Phase 1 only — to be replaced in Phase 3).
 
@@ -135,15 +146,18 @@ PostgreSQL: DataSource configured, driver present, Flyway dependency added.
 
 Runtime DataSource auto-configuration: ENABLED.
 
-Flyway: Configured. Will execute V1 baseline migration on first application startup against a real PostgreSQL instance.
+Flyway: Configured. V1 and V2 migration scripts present.
 
 Hibernate ddl-auto: none (Flyway owns schema).
 
-PostgreSQL connectivity: NOT VERIFIED at this stage — no configured PostgreSQL test database available in the build environment during Phase 2A execution. Connectivity verification deferred to developer local setup or Phase 2B where the first domain migration will confirm end-to-end connectivity.
+PostgreSQL connectivity: NOT VERIFIED — PostgreSQL 18 service is running on this machine but the postgres superuser password is not known/available in the current environment. pg_hba.conf requires scram-sha-256 for all connections. Developer must supply valid credentials via DB_URL, DB_USERNAME, DB_PASSWORD to verify end-to-end connectivity and run db-integration tests.
 
-Flyway runtime migration: NOT VERIFIED for same reason (requires live PostgreSQL).
+Flyway V1 applied: NOT VERIFIED (requires live DB).
+Flyway V2 applied: NOT VERIFIED (requires live DB).
+JPA persistence: NOT VERIFIED against PostgreSQL (requires live DB).
 
-Database integration test class: DatabaseInfrastructureIntegrationTest created. Tagged @Tag("db-integration"). Excluded from default mvn clean test. Run with: mvn clean test -Dgroups=db-integration -Dspring.profiles.active=db-integration (requires DB_URL, DB_USERNAME, DB_PASSWORD pointing at handmade_art_ecommerce_test).
+Database integration tests: Created. Tagged @Tag("db-integration"). Excluded from default mvn clean test. Run with:
+  mvn clean test -Dgroups=db-integration -Dspring.profiles.active=db-integration
 
 ## API Status
 
@@ -155,21 +169,22 @@ Implementation not started.
 
 Test strategy approved.
 
-Tests implemented: 2
-- HandmadeArtEcommerceApplicationTests.contextLoads (default profile — no DB required)
-- DatabaseInfrastructureIntegrationTest (db-integration profile — requires live PostgreSQL)
+Tests implemented: 3 classes
+- HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
+- DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A infra verification)
+- IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 11 tests covering AppUser and Address persistence, constraints, and ownership queries)
 
-Tests executed (default profile): 1
+Tests executed (default profile): 1 (HandmadeArtEcommerceApplicationTests.contextLoads)
 
 Tests passed (default profile): 1
 
 Tests failed: 0
 
-Database integration tests: NOT EXECUTED — require live PostgreSQL. See README for how to run.
+Database integration tests: NOT EXECUTED — require live PostgreSQL with known credentials.
 
 ## Current Known Issues
 
-PostgreSQL connectivity and Flyway runtime migration execution NOT VERIFIED in this session — no configured PostgreSQL test database was available. Developer must configure DB_URL, DB_USERNAME, DB_PASSWORD and run the db-integration profile to verify end-to-end.
+PostgreSQL superuser password not available in this session — db-integration tests cannot be executed until a developer configures valid DB_URL, DB_USERNAME, DB_PASSWORD pointing at the test database.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -177,32 +192,34 @@ Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDy
 
 See DECISION_LOG.md.
 
-DEC-013 (Flyway as migration framework): APPROVED — recorded in DECISION_LOG.md.
-
+DEC-013 (Flyway as migration framework): APPROVED.
+DEC-010 (default address behavior): DEFERRED — is_default field persisted; behavior logic deferred to Phase 3+.
 DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-009 (inventory concurrency), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN but do not block current phase.
 
 ## Last Completed Task
 
-Phase 2A — PostgreSQL Infrastructure + Migration Baseline.
+Phase 2B — Identity and Customer Database Model.
 
 Files created:
-- backend/src/main/resources/db/migration/V1__migration_baseline.sql
-- backend/src/test/resources/application-db-integration.yml
-- backend/src/test/java/com/handmadeart/ecommerce/DatabaseInfrastructureIntegrationTest.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/UserRole.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/AppUser.java
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Address.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/AppUserRepository.java
+- backend/src/main/java/com/handmadeart/ecommerce/repository/AddressRepository.java
+- backend/src/main/resources/db/migration/V2__create_identity_tables.sql
+- backend/src/test/java/com/handmadeart/ecommerce/IdentityPersistenceIntegrationTest.java
 
 Files modified:
-- backend/pom.xml (added Flyway dependencies, db-integration tag exclusion)
-- backend/src/main/resources/application.yml (re-enabled DataSource, added Flyway config, updated DB name)
-- backend/src/test/resources/application.yml (added FlywayAutoConfiguration to exclusions, added profile docs)
-- backend/README.md (PostgreSQL setup, Flyway usage, db-integration test instructions)
-- project-docs/DECISION_LOG.md (DEC-013 added)
+- backend/src/main/java/com/handmadeart/ecommerce/entity/AppUser.java (constructor visibility fix)
+- backend/src/main/java/com/handmadeart/ecommerce/entity/Address.java (constructor visibility fix)
+- project-docs/DEVELOPMENT_STATUS.md
 
 ## Current Task
 
-None. Awaiting Phase 2B prompt.
+None. Awaiting Phase 2C prompt.
 
 ## Next Recommended Task
 
-Phase 2B — Identity and Customer Database Model.
+Phase 2C — Catalogue and Inventory Database Model.
 
-Define JPA entities for AppUser and Address tables per the approved Database Design & ERD (Sections 3.1 and 3.2). Create Flyway migration V2. Write repository interfaces and integration tests. Re-verify end-to-end PostgreSQL connectivity as part of this phase.
+Define JPA entities for Category, Product, ProductImage, ProductRelated, and Inventory per the approved Database Design & ERD (Sections 3.3–3.6, 3.12). Create Flyway migration V3.
