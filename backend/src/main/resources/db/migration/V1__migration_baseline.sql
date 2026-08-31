@@ -1,0 +1,36 @@
+-- =============================================================================
+-- V1__migration_baseline.sql
+--
+-- Migration: Baseline marker for Phase 2A infrastructure setup.
+--
+-- Purpose:
+--   Establishes the Flyway migration baseline for the
+--   Handmade & Custom Artwork E-Commerce Platform database.
+--
+--   This script intentionally creates no domain tables.
+--   Domain schema creation begins in Phase 2B and subsequent migrations.
+--
+-- Migration naming convention:
+--   V<version>__<lowercase_description_with_underscores>.sql
+--   Example: V2__create_identity_tables.sql
+--
+-- Rules:
+--   - Never modify an already-applied migration script.
+--   - All schema changes must be made in new, sequentially numbered scripts.
+--   - Flyway is the sole schema management authority; Hibernate ddl-auto is 'none'.
+--
+-- Database: PostgreSQL
+-- Project:  Handmade & Custom Artwork E-Commerce Platform
+--           IBM Technical Training Capstone Project
+-- =============================================================================
+
+-- Enable the pgcrypto extension as a precaution for any future use of
+-- gen_random_uuid() or cryptographic helpers. Safe to run if already present.
+-- (No-op if the extension is already installed.)
+-- NOTE: This requires superuser or CREATE privilege on the database.
+-- If the deployment user lacks this privilege, remove this line and request
+-- the DBA to enable the extension separately.
+-- CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Baseline marker — no DDL in this migration.
+-- Phase 2B (Identity Entities) will add the first domain tables.

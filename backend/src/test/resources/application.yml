@@ -1,0 +1,21 @@
+# Test configuration — default profile (used by contextLoads and all non-DB unit tests).
+#
+# DataSource and JPA auto-configuration are excluded so that the Spring context
+# loads without requiring a running PostgreSQL instance.
+#
+# DATABASE INTEGRATION TESTS:
+#   Activate the 'db-integration' profile to run tests that require a real PostgreSQL
+#   connection. Set the following environment variables before running:
+#     DB_URL       = jdbc:postgresql://localhost:5432/handmade_art_ecommerce_test
+#     DB_USERNAME  = <your test DB user>
+#     DB_PASSWORD  = <your test DB password>
+#   Then run:
+#     mvn clean test -Dspring.profiles.active=db-integration
+#
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration

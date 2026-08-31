@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: handmade-art-ecommerce
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/handmade_art_ecommerce}
+    username: ${DB_USERNAME:handmadeart_user}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Schema creation and evolution is owned by Flyway, not Hibernate.
+      # 'none' is the correct setting throughout this project.
+      # Do NOT change to 'create', 'create-drop', or 'update'.
+      # Switch to 'validate' once all JPA entities exist and the schema is stable.
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    # Flyway is enabled and is the sole authority for schema creation/evolution.
+    enabled: true
+    # Migration scripts location (standard Flyway convention).
+    locations: classpath:db/migration
+    # Baseline existing schemas if Flyway history table does not yet exist.
+    # Safe for new databases: Flyway creates the schema_version table on first run.
+    baseline-on-migrate: false
+    # Fail on missing migration files — keeps schema and code in sync.
+    out-of-order: false
+    # Phase 2A: no domain tables exist yet; the migration directory is prepared
+    # but only a baseline marker script is present.
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.handmadeart.ecommerce: DEBUG
+    org.flywaydb: INFO

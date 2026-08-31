@@ -1,0 +1,2 @@
+# Package: com.handmadeart.ecommerce.config
+# Purpose: Spring configuration classes (security, CORS, beans, etc.)

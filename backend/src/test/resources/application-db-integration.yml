@@ -1,0 +1,42 @@
+# Database Integration Test Profile — activated with:
+#   mvn clean test -Dspring.profiles.active=db-integration
+#
+# Requires a running PostgreSQL instance configured via environment variables:
+#   DB_URL       = jdbc:postgresql://localhost:5432/handmade_art_ecommerce_test
+#   DB_USERNAME  = <test db user>
+#   DB_PASSWORD  = <test db password>
+#
+# The test database must exist before running these tests.
+# Flyway will apply all migrations automatically on startup.
+#
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/handmade_art_ecommerce_test}
+    username: ${DB_USERNAME:handmadeart_user}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    out-of-order: false
+    # Clean the test schema before migrating — safe only in test environments.
+    clean-on-validation-error: false
+
+logging:
+  level:
+    root: INFO
+    com.handmadeart.ecommerce: DEBUG
+    org.flywaydb: DEBUG
+    org.hibernate.SQL: DEBUG
