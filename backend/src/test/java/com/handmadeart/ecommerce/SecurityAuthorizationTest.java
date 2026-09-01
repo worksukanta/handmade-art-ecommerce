@@ -3,6 +3,7 @@ package com.handmadeart.ecommerce;
 import com.handmadeart.ecommerce.repository.AppUserRepository;
 import com.handmadeart.ecommerce.security.AppUserDetailsService;
 import com.handmadeart.ecommerce.security.JwtService;
+import com.handmadeart.ecommerce.service.AdminCatalogueService;
 import com.handmadeart.ecommerce.service.AuthService;
 import com.handmadeart.ecommerce.service.CatalogueService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
@@ -80,6 +81,9 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private CatalogueService catalogueService;
+
+    @MockitoBean
+    private AdminCatalogueService adminCatalogueService;
 
     // -------------------------------------------------------------------------
     // Test configuration

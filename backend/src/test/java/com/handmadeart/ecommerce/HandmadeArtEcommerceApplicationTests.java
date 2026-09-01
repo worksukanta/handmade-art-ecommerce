@@ -17,6 +17,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * Repositories are mocked because the test application.yml excludes
  * DataSource and JPA auto-configuration (no PostgreSQL needed for this test).
  * All repositories transitively required by the full Spring context must be listed here.
+ * AdminCatalogueService uses @Value for upload dir — no additional mock needed (uses default).
  */
 @SpringBootTest
 class HandmadeArtEcommerceApplicationTests {

@@ -12,16 +12,20 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3B.1 — Public Catalogue APIs — COMPLETED
+Phase 3B.3 — Catalogue Integration Validation — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3B.1 — Public Catalogue APIs — COMPLETED and VERIFIED.
+Phase 3B.3 — Catalogue Integration Validation — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 54, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 97, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
+DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
+DEC-009 (inventory concurrency strategy) remains OPEN. Basic admin inventory management implemented; no locking introduced.
+
+PostgreSQL regression: NOT executed in this phase. No persistence behavior was modified. Developer should run the full db-integration suite as the final Phase 3B regression checkpoint.
 
 ## Overall Status
 
@@ -42,6 +46,10 @@ Phase 3A.2 — Authorization Foundation implemented: ApiAccessDeniedHandler (str
 Phase 3A.3 — Authentication & Security Integration Validation COMPLETED: defect fixed (DaoAuthenticationProvider deprecated no-arg constructor → DaoAuthenticationProvider(PasswordEncoder) constructor), CurrentUserService unit tests added (5 tests). All 35 tests pass (default profile, no PostgreSQL required): 13 controller + 8 AuthService + 5 CurrentUserService + 8 SecurityAuthorization + 1 contextLoads.
 
 Phase 3B.1 — Public Catalogue APIs COMPLETED: category listing, category detail, product listing with search/filter/sort/pagination, product detail with images and availability and related products, related products list. Security config updated to permit catalogue public endpoints. ResourceNotFoundException + GlobalExceptionHandler handler added. All 54 tests pass.
+
+Phase 3B.2 — Admin Catalogue Management APIs COMPLETED: POST/PUT/PATCH category management, POST/PUT/PATCH product management, admin product listing (all statuses), POST/DELETE product image metadata (multipart upload to local filesystem), PUT related-products (full replacement), GET/PATCH inventory management. DuplicateCategoryNameException added. GlobalExceptionHandler extended for 409 conflict types. All 94 tests pass.
+
+Phase 3B.3 — Catalogue Integration Validation COMPLETED: defects fixed (broad IllegalStateException → 409 replaced with narrow InventoryTypeConflictException; double countByProductId() call in addProductImage() consolidated to single call); 3 high-value service tests added (PROD-08: READY_MADE→PORTFOLIO_ONLY removes inventory row; PROD-09: PORTFOLIO_ONLY→READY_MADE creates inventory row; IMG-01: removeProductImage with cross-product imageId → 404). All 97 tests pass (default profile, no PostgreSQL required). DEC-002 remains OPEN. Next phase: Phase 3C Cart APIs.
 
 Frontend not started.
 
@@ -81,11 +89,11 @@ project-docs/
 * [x] Authentication and Authorization (Phase 3A COMPLETE)
 * [ ] Customer Profile
 * [ ] Address Management
-* [-] Categories (Phase 3B.1: public read APIs COMPLETE — admin CRUD in Phase 3B.2)
-* [-] Products (Phase 3B.1: public read APIs COMPLETE — admin CRUD in Phase 3B.2)
-* [-] Product Images (Phase 3B.1: included in product detail response — admin upload in Phase 3B.2)
-* [-] Related Products (Phase 3B.1: related products endpoint COMPLETE — admin manage in Phase 3B.2)
-* [ ] Inventory (admin mutation in Phase 3B.2; availability exposed in product detail)
+* [x] Categories (Phase 3B.1: public read APIs COMPLETE; Phase 3B.2: admin CRUD COMPLETE)
+* [x] Products (Phase 3B.1: public read APIs COMPLETE; Phase 3B.2: admin CRUD COMPLETE)
+* [x] Product Images (Phase 3B.1: included in product detail response; Phase 3B.2: admin upload/remove COMPLETE)
+* [x] Related Products (Phase 3B.1: related products endpoint COMPLETE; Phase 3B.2: admin manage COMPLETE)
+* [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency OPEN)
 * [ ] Cart
 * [ ] Checkout
 * [ ] Orders
@@ -253,6 +261,21 @@ Implemented (Phase 3B.1 — public catalogue, no auth required):
 - GET /api/v1/products/{id}           — 200 + ProductDetailResponse (images, availability, related); 404 if INACTIVE/missing
 - GET /api/v1/products/{id}/related-products — 200 + ProductSummaryResponse[]; 404 if source inactive/missing
 
+Implemented (Phase 3B.2 — admin catalogue management, ADMIN role required):
+- POST  /api/v1/admin/categories               — 201 + CategoryResponse; 400, 409 duplicate name
+- PUT   /api/v1/admin/categories/{id}          — 200 + CategoryResponse; 400, 404, 409
+- PATCH /api/v1/admin/categories/{id}/status   — 200 + CategoryResponse; 400, 404
+- GET   /api/v1/admin/products                 — 200 + PageResponse<ProductSummaryResponse> (all statuses)
+- POST  /api/v1/admin/products                 — 201 + ProductDetailResponse; 400, 404 category
+- PUT   /api/v1/admin/products/{id}            — 200 + ProductDetailResponse; 400, 404
+- PATCH /api/v1/admin/products/{id}/status     — 200 + ProductDetailResponse; 400, 404
+- POST  /api/v1/admin/products/{id}/images     — 201 + ProductImageResponse; 400 (multipart, image/* only; DEC-003 size OPEN)
+- DELETE /api/v1/admin/products/{id}/images/{imageId} — 204; 404
+- PUT   /api/v1/admin/products/{id}/related-products — 200 + ProductSummaryResponse[]; 400 self-ref, 404
+- GET   /api/v1/admin/inventory                — 200 + PageResponse<InventoryResponse>
+- GET   /api/v1/admin/inventory/{productId}    — 200 + InventoryResponse; 404
+- PATCH /api/v1/admin/inventory/{productId}    — 200 + InventoryResponse; 400 negative, 404, 409 PORTFOLIO_ONLY
+
 ## Testing Status
 
 Test strategy approved.
@@ -265,14 +288,16 @@ Tests implemented: 11 classes
 - CurrentUserServiceTest (default profile — Phase 3A.3: 5 tests)
 - CatalogueControllerTest (default profile — Phase 3B.1: 9 tests)
 - CatalogueServiceTest (default profile — Phase 3B.1: 10 tests)
+- AdminCatalogueControllerTest (default profile — Phase 3B.2: 19 tests)
+- AdminCatalogueServiceTest (default profile — Phase 3B.2/3B.3: 24 tests — 3 added in 3B.3)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 54 (Phase 3B.1 verification run)
+Tests executed (default profile): 97 (Phase 3B.3 verification run)
 
-Tests passed (default profile): 54
+Tests passed (default profile): 97
 
 Tests failed (default profile): 0
 
@@ -282,9 +307,10 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3B.
+No blocking issues for Phase 3B.3.
 
-DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
+DEC-003 (file upload type/size limits): OPEN — image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
+DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Basic admin inventory management implemented. Will be resolved in the appropriate transactional implementation phase.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -299,19 +325,68 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 3A.3 — Authentication & Security Integration Validation — COMPLETED and VERIFIED.
+Phase 3B.3 — Catalogue Integration Validation — COMPLETED and VERIFIED.
 
 Build verification: `mvn clean test`
-Result: Tests run: 35, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 97, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Defects fixed:
+- Broad IllegalStateException → 409 in GlobalExceptionHandler replaced with narrow InventoryTypeConflictException handler. New exception class created: InventoryTypeConflictException.java. AdminCatalogueService.updateInventory() now throws InventoryTypeConflictException instead of IllegalStateException.
+- Double countByProductId() call in AdminCatalogueService.addProductImage() consolidated to a single call.
+
+Tests added (3 new service tests in AdminCatalogueServiceTest):
+- PROD-08: updateProduct READY_MADE → PORTFOLIO_ONLY removes inventory row
+- PROD-09: updateProduct PORTFOLIO_ONLY → READY_MADE creates inventory row
+- IMG-01: removeProductImage with imageId belonging to a different product → ResourceNotFoundException
 
 Files created:
-- backend/src/test/java/com/handmadeart/ecommerce/CurrentUserServiceTest.java (5 tests)
+- backend/src/main/java/com/handmadeart/ecommerce/exception/InventoryTypeConflictException.java
 
 Files modified:
-- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java (DaoAuthenticationProvider(PasswordEncoder) constructor fix)
+- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java (InventoryTypeConflictException handler; removed broad IllegalStateException handler)
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminCatalogueService.java (InventoryTypeConflictException thrown; single countByProductId call)
+- backend/src/test/java/com/handmadeart/ecommerce/AdminCatalogueServiceTest.java (3 tests added: PROD-08, PROD-09, IMG-01; INV-02 updated to assert InventoryTypeConflictException)
+- backend/src/test/java/com/handmadeart/ecommerce/AdminCatalogueControllerTest.java (ACAT-16 mock updated to throw InventoryTypeConflictException)
 - project-docs/DEVELOPMENT_STATUS.md
 
 DEC-002 (JWT logout/revocation): OPEN — not implemented.
+DEC-003 (file upload type/size limits): OPEN — image/* content-type validated; size limit not enforced.
+DEC-009 (inventory concurrency strategy): OPEN — basic admin stock management only.
+
+PostgreSQL regression: Developer must run full db-integration suite as the final Phase 3B regression checkpoint:
+  mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+
+## Prior Last Completed Task (Phase 3B.2)
+
+Phase 3B.2 — Admin Catalogue Management APIs — COMPLETED and VERIFIED.
+
+Build verification: `mvn clean test`
+Result: Tests run: 94, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Files created:
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/CategoryRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/CategoryStatusRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/ProductRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/ProductStatusRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/RelatedProductsRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/InventoryUpdateRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/InventoryResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminCatalogueService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminCategoryController.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminProductController.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/DuplicateCategoryNameException.java
+- backend/src/test/java/com/handmadeart/ecommerce/AdminCatalogueControllerTest.java (19 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/AdminCatalogueServiceTest.java (21 tests)
+
+Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java (DuplicateCategoryNameException + IllegalStateException handlers)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java (AdminCatalogueService mock added)
+- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java (comment update)
+- project-docs/DEVELOPMENT_STATUS.md
+
+DEC-002 (JWT logout/revocation): OPEN — not implemented.
+DEC-003 (file upload type/size limits): OPEN — image/* content-type validated; size limit not enforced.
+DEC-009 (inventory concurrency strategy): OPEN — basic admin stock management only.
 
 ## Prior Last Completed Task (Phase 2D)
 
@@ -362,10 +437,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3A complete and validated. Awaiting Phase 3B prompt.
+None. Phase 3B.3 complete and verified. Awaiting Phase 3C prompt.
 
 ## Next Recommended Task
 
-Phase 3B — Catalogue APIs.
+Phase 3C — Cart APIs.
 
-Implement the read-only catalogue endpoints: category listing, product listing, product detail, product images. These are public (no authentication required). Build on the established security configuration — new public routes must be explicitly permitted in SecurityConfig.
+Implement customer cart management: add item, update quantity, remove item, view cart, clear cart. Requires authenticated customer identity from JWT (ownership from SecurityContextHolder, not client-supplied user IDs). Inventory availability check (no reservation — DEC-009 deferred to checkout).

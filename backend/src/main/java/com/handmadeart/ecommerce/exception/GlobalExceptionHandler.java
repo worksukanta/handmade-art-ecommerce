@@ -142,6 +142,43 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(DuplicateCategoryNameException.class)
+    public ResponseEntity<ApiError> handleDuplicateCategoryName(
+            DuplicateCategoryNameException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "DUPLICATE_CATEGORY_NAME",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 — Business-rule conflict (inventory type mismatch)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Handles the narrow {@link InventoryTypeConflictException} thrown when an inventory
+     * operation is attempted on a product type that does not support it (e.g. PORTFOLIO_ONLY).
+     *
+     * Using a specific exception type rather than the broad IllegalStateException prevents
+     * unrelated JVM/framework state exceptions from being incorrectly mapped to 409.
+     */
+    @ExceptionHandler(InventoryTypeConflictException.class)
+    public ResponseEntity<ApiError> handleInventoryTypeConflict(
+            InventoryTypeConflictException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "CONFLICT",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     // -------------------------------------------------------------------------
     // 404 — No handler / resource not found
     // -------------------------------------------------------------------------
