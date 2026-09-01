@@ -71,7 +71,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: registration and login require no authentication
                 .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
-                // Admin-only: all /api/v1/admin/** paths require the ADMIN role
+                // Admin-only: all /api/v1/admin/**  paths require the ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // All other requests require a valid authenticated principal (any role)
                 .anyRequest().authenticated()
@@ -89,9 +89,9 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        // DaoAuthenticationProvider(PasswordEncoder) constructor preferred in Spring Security 6.3+
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(passwordEncoder());
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
 

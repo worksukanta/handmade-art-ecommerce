@@ -12,14 +12,18 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 2D — Commerce Database Model — COMPLETED
+Phase 3A — Authentication & Security Foundation — COMPLETED (Phase 3A.1 + 3A.2 + 3A.3)
 
 ## Last Verified Milestone
 
-Phase 2D — Commerce Database Model — COMPLETED and VERIFIED.
+Phase 3A.3 — Authentication & Security Integration Validation — COMPLETED and VERIFIED.
 
-`mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
-Result: BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
+`mvn clean test` (default profile, no PostgreSQL required)
+Result: Tests run: 35, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
+
+PostgreSQL regression (db-integration suite, Phase 2A–2D): NOT re-run in Phase 3A.3 — no persistence changes made. Developer should run full db-integration suite as final Phase 3A regression checkpoint before moving to Phase 3B.
 
 ## Overall Status
 
@@ -33,7 +37,11 @@ Catalogue and Inventory persistence model implemented and fully verified against
 
 Commerce persistence model implemented and fully verified against live PostgreSQL: Cart, CartItem, CustomerOrder, OrderItem, Payment entities, repositories, V4 migration (Phase 2D). All 53 db-integration tests pass.
 
-Phase 3A.1 — Authentication Foundation implemented: Spring Security (JWT-based stateless), BCrypt password hashing, customer registration, login, JWT generation/validation, authenticated-user resolution, error handling. Temporary DevSecurityConfig replaced. All 22 tests pass (default profile, no PostgreSQL required): 13 controller MockMvc tests + 8 AuthService unit tests + 1 contextLoads.
+Phase 3A.1 — Authentication Foundation implemented: Spring Security (JWT-based stateless), BCrypt password hashing, customer registration, login, JWT generation/validation, authenticated-user resolution, error handling. Temporary DevSecurityConfig replaced.
+
+Phase 3A.2 — Authorization Foundation implemented: ApiAccessDeniedHandler (structured 403), CurrentUserService (ownership-resolution utility), SecurityAuthorizationTest (8 authorization tests).
+
+Phase 3A.3 — Authentication & Security Integration Validation COMPLETED: defect fixed (DaoAuthenticationProvider deprecated no-arg constructor → DaoAuthenticationProvider(PasswordEncoder) constructor), CurrentUserService unit tests added (5 tests). All 35 tests pass (default profile, no PostgreSQL required): 13 controller + 8 AuthService + 5 CurrentUserService + 8 SecurityAuthorization + 1 contextLoads.
 
 Frontend not started.
 
@@ -70,7 +78,7 @@ project-docs/
 
 * [x] Spring Boot Project Initialization
 * [x] Database Foundation (Phase 2A–2F complete — Database Foundation phase COMPLETE)
-* [-] Authentication and Authorization (Phase 3A.1 complete — Phase 3A.2 not started)
+* [x] Authentication and Authorization (Phase 3A.1 + 3A.2 + 3A.3 COMPLETE — Phase 3B not started)
 * [ ] Customer Profile
 * [ ] Address Management
 * [ ] Categories
@@ -187,7 +195,16 @@ Phase 3A.1 authentication components:
 - Exceptions: ApiError (error envelope per SDD §12.2), DuplicateEmailException, GlobalExceptionHandler
 - Config: app.jwt.secret and app.jwt.expiration-ms externalized; no hardcoded secrets
 
-Build verification: mvn clean test — PASSED. 14 tests, 0 failures, 0 errors (default profile). BUILD SUCCESS.
+Phase 3A.2 authorization components:
+- Security: ApiAccessDeniedHandler (structured JSON 403 for authenticated but unauthorized requests)
+- Service: CurrentUserService (JWT-derived ownership resolution; reusable by all future customer-owned resource APIs)
+- SecurityConfig updated: ApiAccessDeniedHandler wired; route rules: public (register/login), ADMIN (admin/**), authenticated (all others)
+
+Phase 3A.3 validation changes:
+- SecurityConfig fix: DaoAuthenticationProvider(PasswordEncoder) constructor used (replaces deprecated no-arg constructor)
+- Test added: CurrentUserServiceTest (5 unit tests — CUS-01 through CUS-04b: authenticated user, email, null context, anonymous principal rejection)
+
+Build verification: mvn clean test — PASSED. 35 tests, 0 failures, 0 errors (default profile). BUILD SUCCESS.
 
 ## Frontend Status
 
@@ -233,17 +250,20 @@ Implemented (Phase 3A.1):
 
 Test strategy approved.
 
-Tests implemented: 6 classes
+Tests implemented: 9 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - AuthControllerTest (default profile — Phase 3A.1: 13 tests)
+- AuthServiceTest (default profile — Phase 3A.1: 8 tests)
+- SecurityAuthorizationTest (default profile — Phase 3A.2: 8 tests)
+- CurrentUserServiceTest (default profile — Phase 3A.3: 5 tests)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 14 (Phase 3A.1 verification run)
+Tests executed (default profile): 35 (Phase 3A.3 final validation run)
 
-Tests passed (default profile): 14
+Tests passed (default profile): 35
 
 Tests failed (default profile): 0
 
@@ -253,7 +273,7 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3A.2.
+No blocking issues for Phase 3B.
 
 DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Will be resolved in the appropriate transactional implementation phase.
 
@@ -270,38 +290,19 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 3A.1 — Authentication Foundation — COMPLETED and VERIFIED (test-quality review passed).
+Phase 3A.3 — Authentication & Security Integration Validation — COMPLETED and VERIFIED.
 
 Build verification: `mvn clean test`
-Result: Tests run: 22, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 35, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 Files created:
-- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
-- backend/src/main/java/com/handmadeart/ecommerce/security/JwtService.java
-- backend/src/main/java/com/handmadeart/ecommerce/security/AppUserDetailsService.java
-- backend/src/main/java/com/handmadeart/ecommerce/security/JwtAuthenticationFilter.java
-- backend/src/main/java/com/handmadeart/ecommerce/security/AuthEntryPoint.java
-- backend/src/main/java/com/handmadeart/ecommerce/service/AuthService.java
-- backend/src/main/java/com/handmadeart/ecommerce/controller/AuthController.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/RegisterRequest.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/LoginRequest.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/UserResponse.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/auth/LoginResponse.java
-- backend/src/main/java/com/handmadeart/ecommerce/exception/ApiError.java
-- backend/src/main/java/com/handmadeart/ecommerce/exception/DuplicateEmailException.java
-- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java
-- backend/src/test/java/com/handmadeart/ecommerce/AuthControllerTest.java (13 tests)
-- backend/src/test/java/com/handmadeart/ecommerce/AuthServiceTest.java (8 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/CurrentUserServiceTest.java (5 tests)
 
 Files modified:
-- backend/pom.xml (added JJWT 0.12.6)
-- backend/src/main/resources/application.yml (added app.jwt.secret + app.jwt.expiration-ms)
-- backend/src/test/resources/application.yml (added test JWT properties)
-- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java (DaoAuthenticationProvider(PasswordEncoder) constructor fix)
 - project-docs/DEVELOPMENT_STATUS.md
 
-Files deleted:
-- backend/src/main/java/com/handmadeart/ecommerce/config/DevSecurityConfig.java
+DEC-002 (JWT logout/revocation): OPEN — not implemented.
 
 ## Prior Last Completed Task (Phase 2D)
 
@@ -352,10 +353,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 2D complete and verified. Awaiting Phase 2E prompt.
+None. Phase 3A complete and validated. Awaiting Phase 3B prompt.
 
 ## Next Recommended Task
 
-Phase 2E — Custom Artwork Database Model.
+Phase 3B — Catalogue APIs.
 
-Implement V5 Flyway migration for the custom artwork workflow tables (custom_order_request, quotation, shipment). Implement corresponding entities, enums, and repositories. Complete the enum stubs already present: CustomOrderRequestStatus, QuotationStatus, ShipmentStatus.
+Implement the read-only catalogue endpoints: category listing, product listing, product detail, product images. These are public (no authentication required). Build on the established security configuration — new public routes must be explicitly permitted in SecurityConfig.
