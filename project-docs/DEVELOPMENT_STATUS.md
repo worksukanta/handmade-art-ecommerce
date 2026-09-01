@@ -12,20 +12,22 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3C.2 — Cart Validation & Ownership — COMPLETED
+Phase 3C.3 — Cart Integration Validation — COMPLETED
+Phase 3C — Cart — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3C.2 — Cart Validation & Ownership — COMPLETED and VERIFIED.
+Phase 3C.3 — Cart Integration Validation — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 140, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 141, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
 DEC-009 (inventory concurrency strategy) remains OPEN. Cart-time availability check implemented (no stock reservation, no locking). DEC-009 will be resolved at checkout/order-creation phase.
+DEC-007 (tax/delivery charge) remains DEFERRED. Cart totals = item subtotals only.
 
-PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3C.2 regression checkpoint.
+PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3C.3 regression checkpoint.
 
 ## Overall Status
 
@@ -94,7 +96,7 @@ project-docs/
 * [x] Product Images (Phase 3B.1: included in product detail response; Phase 3B.2: admin upload/remove COMPLETE)
 * [x] Related Products (Phase 3B.1: related products endpoint COMPLETE; Phase 3B.2: admin manage COMPLETE)
 * [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency OPEN)
-* [-] Cart (Phase 3C.1: customer cart APIs COMPLETE; Phase 3C.2: cart validation & ownership COMPLETE — checkout/order not yet started)
+* [x] Cart (Phase 3C.1: customer cart APIs; Phase 3C.2: validation & ownership hardening; Phase 3C.3: integration validation — COMPLETE)
 * [ ] Checkout
 * [ ] Orders
 * [ ] Payments
@@ -297,16 +299,16 @@ Tests implemented: 13 classes
 - CatalogueServiceTest (default profile — Phase 3B.1: 10 tests)
 - AdminCatalogueControllerTest (default profile — Phase 3B.2: 19 tests)
 - AdminCatalogueServiceTest (default profile — Phase 3B.2/3B.3: 24 tests — 3 added in 3B.3)
-- CartControllerTest (default profile — Phase 3C.1/3C.2: 19 tests)
+- CartControllerTest (default profile — Phase 3C.1/3C.2/3C.3: 20 tests)
 - CartServiceTest (default profile — Phase 3C.1/3C.2: 24 tests)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 140 (Phase 3C.2 verification run)
+Tests executed (default profile): 141 (Phase 3C.3 verification run)
 
-Tests passed (default profile): 140
+Tests passed (default profile): 141
 
 Tests failed (default profile): 0
 
@@ -333,6 +335,47 @@ DEC-009 (inventory concurrency strategy): OPEN — does not block Phase 2C persi
 DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task
+
+Phase 3C.3 — Cart Integration Validation — COMPLETED and VERIFIED.
+
+Build verification: `mvn clean test`
+Result: Tests run: 141, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Defect found and fixed:
+- SecurityConfig used `anyRequest().authenticated()` for all cart endpoints. REST API Spec §8
+  (tables 28–32) specifies "Authorized roles: CUSTOMER" for all 5 cart endpoints. ADMIN role
+  must be rejected with 403. Fixed by adding explicit `hasRole("CUSTOMER")` rule for
+  `/api/v1/cart` and `/api/v1/cart/**` before the `anyRequest()` catch-all in SecurityConfig.
+
+Validation results: all Phase 3C cart behaviors confirmed correct against approved specification:
+- GET /api/v1/cart → 200 CartResponse; empty cart returns cartId=null, items=[], total=0; no DB write
+- POST /api/v1/cart/items → lazy cart create; READY_MADE+ACTIVE only; quantity accumulation; stock check
+- PUT /api/v1/cart/items/{itemId} → ownership-scoped update; stock check; 404 on cross-user item
+- DELETE /api/v1/cart/items/{itemId} → ownership-scoped removal; 200 + updated cart
+- DELETE /api/v1/cart/items → clear items, preserve cart record; 204
+- All responses: server-calculated prices; BigDecimal; no client prices trusted; no persisted price
+- Transactions: class-level @Transactional; getCart readOnly; lazy creation atomic with addItem
+- Repository: findByCartIdAndId scopes ownership at SQL level; no in-memory cross-user filtering
+
+Test added:
+- CART-C-20: ADMIN JWT → GET /cart → 403 (REST API Spec §8 CUSTOMER role enforcement)
+
+Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
+  (cart paths: anyRequest().authenticated() → hasRole("CUSTOMER"))
+- backend/src/test/java/com/handmadeart/ecommerce/CartControllerTest.java
+  (CART-C-20 added; CART-C-18 description corrected)
+- project-docs/DEVELOPMENT_STATUS.md
+
+Schema changes: None. V1–V5 unchanged.
+
+DEC-009 (inventory concurrency strategy): OPEN — advisory stock check; no reservation, no locking.
+DEC-007 (tax/delivery charge): DEFERRED — totals = item subtotals only.
+
+PostgreSQL regression: Developer should run full db-integration suite:
+  mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+
+## Prior Last Completed Task (Phase 3C.2)
 
 Phase 3C.2 — Cart Validation & Ownership — COMPLETED and VERIFIED.
 
@@ -536,10 +579,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3C.2 complete and verified. Awaiting Phase 3C.3 prompt.
+None. Phase 3C.3 complete and verified. Phase 3C Cart module COMPLETE.
 
 ## Next Recommended Task
 
-Phase 3C.3 — Cart Regression & Cross-User Isolation Validation.
+Phase 3D — Checkout / Orders / Payments.
 
-Verify full Phase 3C cart API cross-user isolation, ownership boundaries, product-type eligibility, and stock rules against a live PostgreSQL database; confirm all cart db-integration test scenarios pass.
+Implement POST /api/v1/checkout/validate, POST /api/v1/orders (create order from cart), GET /api/v1/orders, GET /api/v1/orders/{id}, POST /api/v1/payments/orders/{orderId}. Requires DEC-009 (inventory concurrency) to be resolved before order creation.

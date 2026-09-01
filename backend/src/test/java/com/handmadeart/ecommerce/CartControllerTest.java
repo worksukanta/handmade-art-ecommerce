@@ -74,9 +74,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   CART-C-15  CUSTOMER JWT → DELETE /cart/items/{itemId} → 200 + CartResponse
  *   CART-C-16  CUSTOMER JWT → DELETE /cart/items/{itemId} → item not found → 404
  *   CART-C-17  CUSTOMER JWT → DELETE /cart/items → clear cart → 204
- *   CART-C-18  ADMIN JWT → cart endpoints → cart operations work for any authenticated user
- *              (cart endpoints do not restrict to CUSTOMER role — any authenticated user may use cart)
+ *   CART-C-18  Unauthenticated DELETE /cart/items → 401 (second 401 variant)
  *   CART-C-19  CUSTOMER JWT → POST /cart/items → CUSTOM_AVAILABLE product → 409 (FR-CART-01)
+ *   CART-C-20  ADMIN JWT → GET /cart → 403 (REST API Spec §8: cart is CUSTOMER-only)
  */
 @WebMvcTest(CartController.class)
 @Import({
@@ -581,7 +581,7 @@ class CartControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // CART-C-18: Security — cart endpoint requires authentication
+    // CART-C-18: Unauthenticated DELETE /cart/items → 401
     // -------------------------------------------------------------------------
 
     @Test
@@ -589,6 +589,24 @@ class CartControllerTest {
     void unauthenticated_clearCart_returns401() throws Exception {
         mockMvc.perform(delete("/api/v1/cart/items"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // -------------------------------------------------------------------------
+    // CART-C-20: ADMIN JWT → GET /cart → 403 (CUSTOMER role required)
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("CART-C-20: ADMIN JWT on GET /cart returns 403 (cart is CUSTOMER role only per REST API Spec §8)")
+    void adminToken_getCart_returns403() throws Exception {
+        // REST API Spec §8 specifies "Authorized roles: CUSTOMER" for all cart endpoints.
+        // An ADMIN principal must be rejected with 403, not allowed to operate the cart.
+        when(appUserDetailsService.loadUserByUsername(anyString()))
+                .thenReturn(adminDetails());
+
+        mockMvc.perform(get("/api/v1/cart")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     // -------------------------------------------------------------------------

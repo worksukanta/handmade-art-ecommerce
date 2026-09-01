@@ -78,6 +78,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/products", "/api/v1/products/**").permitAll()
                 // Admin-only: all /api/v1/admin/**  paths require the ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Customer cart: REST API Spec §8 specifies CUSTOMER role for all cart endpoints
+                .requestMatchers("/api/v1/cart", "/api/v1/cart/**").hasRole("CUSTOMER")
                 // All other requests require a valid authenticated principal (any role)
                 .anyRequest().authenticated()
             )
