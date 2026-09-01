@@ -5,12 +5,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,6 +89,29 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------------------------------------------------------------
+    // 403 — Authorization failures
+    // -------------------------------------------------------------------------
+
+    /**
+     * Handles AccessDeniedException thrown from @PreAuthorize-annotated methods.
+     * The filter-level 403 (when Spring Security rejects before reaching a controller)
+     * is handled by ApiAccessDeniedHandler directly on the response.
+     * This handler covers method-security denials that reach @ControllerAdvice.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.FORBIDDEN.value(),
+                "FORBIDDEN",
+                "You do not have permission to access this resource",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    // -------------------------------------------------------------------------
     // 409 — Conflict (duplicate resource)
     // -------------------------------------------------------------------------
 
@@ -101,6 +126,23 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 404 — No handler / resource not found
+    // -------------------------------------------------------------------------
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiError> handleNoResourceFound(
+            NoResourceFoundException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.NOT_FOUND.value(),
+                "NOT_FOUND",
+                "The requested resource was not found",
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     // -------------------------------------------------------------------------

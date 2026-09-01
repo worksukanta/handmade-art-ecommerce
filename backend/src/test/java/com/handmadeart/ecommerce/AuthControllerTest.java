@@ -69,6 +69,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({AuthControllerTest.TestSecurityConfig.class, com.handmadeart.ecommerce.config.SecurityConfig.class,
          com.handmadeart.ecommerce.security.JwtAuthenticationFilter.class,
          com.handmadeart.ecommerce.security.AuthEntryPoint.class,
+         com.handmadeart.ecommerce.security.ApiAccessDeniedHandler.class,
          com.handmadeart.ecommerce.exception.GlobalExceptionHandler.class})
 class AuthControllerTest {
 

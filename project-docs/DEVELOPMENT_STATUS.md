@@ -12,14 +12,14 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3A.1 — Authentication Foundation (Register, Login, JWT) — COMPLETED
+Phase 2D — Commerce Database Model — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3A.1 — Authentication Foundation — COMPLETED and VERIFIED.
+Phase 2D — Commerce Database Model — COMPLETED and VERIFIED.
 
-`mvn clean test`
-Tests run: 14, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+`mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration`
+Result: BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
 
 ## Overall Status
 
@@ -110,7 +110,7 @@ project-docs/
 * [x] Phase 2A — Infrastructure + Migration Baseline
 * [x] Phase 2B — Identity and Customer Database Model
 * [x] Phase 2C — Catalogue and Inventory Database Model
-* [x] Phase 2D — Commerce Database Model
+* [x] Phase 2D — Commerce Database Model — COMPLETED and VERIFIED (V4 migration verified against live PostgreSQL; all Phase 2A–2D db-integration tests pass)
 * [ ] Phase 2E — Custom Artwork Database Model
 * [ ] Phase 2F — Database Integration Validation
 
@@ -208,11 +208,13 @@ PostgreSQL connectivity: VERIFIED.
 Flyway V1 applied: VERIFIED.
 Flyway V2 applied: VERIFIED.
 Flyway V3 applied: VERIFIED — confirmed by developer during Phase 2C live integration run.
-Flyway V4 applied: VERIFIED — confirmed by developer during Phase 2D live integration run.
+Flyway V4 applied: VERIFIED — confirmed by developer during Phase 2D live integration run (V4 migration verified against live PostgreSQL; all Phase 2A–2D db-integration tests pass).
 
 JPA persistence (AppUser, Address): VERIFIED via db-integration tests.
 JPA persistence (Category, Product, ProductImage, ProductRelated, Inventory): VERIFIED — developer ran full db-integration suite against live PostgreSQL. Tests run: 36, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
-JPA persistence (Cart, CartItem, CustomerOrder, OrderItem, Payment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2D tests pass. Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+JPA persistence (Cart, CartItem, CustomerOrder, OrderItem, Payment): VERIFIED — developer ran full db-integration suite against live PostgreSQL. All Phase 2A–2D tests pass. BUILD SUCCESS.
+  Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+  Result: BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
 
 Database integration tests: Tagged @Tag("db-integration"). Run with:
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
@@ -245,9 +247,9 @@ Tests passed (default profile): 14
 
 Tests failed (default profile): 0
 
-Database integration tests (Phase 2A–2D): EXECUTED and PASSED (prior phase verification).
+Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
   Command: mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
-  Tests run: 53, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
+  Result: BUILD SUCCESS. All Phase 2A–2D database integration tests pass.
 
 ## Current Known Issues
 
@@ -350,10 +352,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3A.1 complete. Awaiting Phase 3A.2 prompt.
+None. Phase 2D complete and verified. Awaiting Phase 2E prompt.
 
 ## Next Recommended Task
 
-Phase 3A.2 — Full Endpoint Authorization.
+Phase 2E — Custom Artwork Database Model.
 
-Apply role-based and ownership-based access control to all implemented endpoints as modules are added. Configure ADMIN-only and CUSTOMER-only route rules in SecurityConfig. Implement method-level security where required. DEC-002 (JWT logout/revocation) remains OPEN — resolve before implementing logout.
+Implement V5 Flyway migration for the custom artwork workflow tables (custom_order_request, quotation, shipment). Implement corresponding entities, enums, and repositories. Complete the enum stubs already present: CustomOrderRequestStatus, QuotationStatus, ShipmentStatus.
