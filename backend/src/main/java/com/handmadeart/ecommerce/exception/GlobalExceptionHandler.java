@@ -1,7 +1,6 @@
 package com.handmadeart.ecommerce.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
-import com.handmadeart.ecommerce.exception.OrderNotPayableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -238,6 +237,51 @@ public class GlobalExceptionHandler {
         ApiError error = new ApiError(
                 HttpStatus.CONFLICT.value(),
                 "INSUFFICIENT_STOCK",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 — Custom Artwork: invalid workflow transition
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when a requested workflow transition is invalid for the current
+     * {@link com.handmadeart.ecommerce.entity.CustomOrderRequest} or
+     * {@link com.handmadeart.ecommerce.entity.Quotation} state.
+     * Mapped to 409 per REST API Spec §13 "409 invalid transition".
+     */
+    @ExceptionHandler(InvalidWorkflowTransitionException.class)
+    public ResponseEntity<ApiError> handleInvalidWorkflowTransition(
+            InvalidWorkflowTransitionException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "INVALID_TRANSITION",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 — Custom Artwork: duplicate quotation (DEC-004 DEFERRED)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when an Admin attempts to create a second quotation for a request
+     * that already has one. DEC-004 DEFERRED — re-quotation not supported.
+     * Mapped to 409 per REST API Spec §14 "409 ineligible request state".
+     */
+    @ExceptionHandler(DuplicateQuotationException.class)
+    public ResponseEntity<ApiError> handleDuplicateQuotation(
+            DuplicateQuotationException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "DUPLICATE_QUOTATION",
                 ex.getMessage(),
                 request.getRequestURI()
         );

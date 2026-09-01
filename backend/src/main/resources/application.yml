@@ -46,6 +46,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:ZGV2LW9ubHktcGxhY2Vob2xkZXItc2VjcmV0LWtleS1mb3ItaGFuZG1hZGVhcnQ=}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  upload:
+    product-images: ${UPLOAD_PRODUCT_IMAGES_DIR:uploads/product-images}
+    reference-images: ${UPLOAD_REFERENCE_IMAGES_DIR:uploads/reference-images}
 
 logging:
   level:

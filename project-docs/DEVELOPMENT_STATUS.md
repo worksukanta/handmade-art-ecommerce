@@ -12,16 +12,15 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3D.2 — Order Read APIs, Payment, Phase 3D Final Validation — COMPLETED
-Phase 3D — Checkout / Orders / Standard Payments — COMPLETED
+Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED
+Phase 3E — Custom Artwork Workflow — IN PROGRESS (Phase 3E.2 next)
 
 ## Last Verified Milestone
 
-Phase 3D.2 — Order Read APIs + Standard Payments — COMPLETED and VERIFIED.
-Phase 3D — Checkout / Orders / Standard Payments — COMPLETED.
+Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 190, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 225, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented (immediate SUCCESS on initiation).
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
@@ -56,6 +55,8 @@ Phase 3B.1 — Public Catalogue APIs COMPLETED: category listing, category detai
 Phase 3B.2 — Admin Catalogue Management APIs COMPLETED: POST/PUT/PATCH category management, POST/PUT/PATCH product management, admin product listing (all statuses), POST/DELETE product image metadata (multipart upload to local filesystem), PUT related-products (full replacement), GET/PATCH inventory management. DuplicateCategoryNameException added. GlobalExceptionHandler extended for 409 conflict types. All 94 tests pass.
 
 Phase 3B.3 — Catalogue Integration Validation COMPLETED: defects fixed (broad IllegalStateException → 409 replaced with narrow InventoryTypeConflictException; double countByProductId() call in addProductImage() consolidated to single call); 3 high-value service tests added (PROD-08: READY_MADE→PORTFOLIO_ONLY removes inventory row; PROD-09: PORTFOLIO_ONLY→READY_MADE creates inventory row; IMG-01: removeProductImage with cross-product imageId → 404). All 97 tests pass (default profile, no PostgreSQL required). DEC-002 remains OPEN. Next phase: Phase 3C Cart APIs.
+
+Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation COMPLETED: customer create/list/get custom requests, reference image upload, admin list/review requests, admin create quotation, customer get quotation. Custom artwork DTOs, service, controller, admin controller. InvalidWorkflowTransitionException + DuplicateQuotationException added. GlobalExceptionHandler extended. SecurityConfig updated (/api/v1/custom-requests/** → CUSTOMER). All 225 tests pass (default profile, no PostgreSQL required). DEC-003 (file upload size) OPEN. DEC-004 (requotation) DEFERRED. DEC-005 (advance payment rule) OPEN — Phase 3E.2 not started.
 
 Frontend not started.
 
@@ -104,10 +105,10 @@ project-docs/
 * [x] Checkout (Phase 3D.1: POST /api/v1/orders checkout flow with pessimistic locking — COMPLETE)
 * [x] Orders (Phase 3D.1: order creation; Phase 3D.2: GET list + detail — COMPLETE)
 * [x] Payments (Phase 3D.2: POST/GET /orders/{id}/payments — standard ready-made orders, DEC-001 sandbox — COMPLETE)
-* [ ] Custom Artwork Requests
-* [ ] Reference Image Upload
-* [ ] Admin Review
-* [ ] Quotations
+* [x] Custom Artwork Requests (Phase 3E.1: customer CRUD + admin list/review — COMPLETE)
+* [x] Reference Image Upload (Phase 3E.1: multipart to filesystem, metadata to DB — COMPLETE)
+* [x] Admin Review (Phase 3E.1: ACCEPT/REJECT with workflow transitions — COMPLETE)
+* [x] Quotations (Phase 3E.1: admin create, customer read — COMPLETE)
 * [ ] Quotation Approval/Rejection
 * [ ] Advance Payment
 * [ ] Production Workflow
@@ -157,6 +158,7 @@ Migrations:
 - V2__create_identity_tables.sql — app_user and address tables (applied and verified)
 - V3__create_catalogue_inventory_tables.sql — category, product, product_image, product_related, inventory tables (applied and verified)
 - V4__create_commerce_tables.sql — cart, cart_item, customer_order, order_item, payment tables (applied and verified)
+- V5__create_custom_artwork_tables.sql — custom_order_request, custom_order_image, quotation, shipment tables + deferred FK on payment (present, not yet run against live DB)
 
 Enums created: UserRole, CategoryStatus, ProductStatus, ProductType, OrderStatus, PaymentStatus, PaymentPurpose
 Enum stubs present (not yet implemented): CustomOrderRequestStatus, QuotationStatus, ShipmentStatus
@@ -298,11 +300,24 @@ Implemented (Phase 3D.2 — order reads and standard payment, CUSTOMER role requ
 - POST /api/v1/orders/{id}/payments      — 201 + PaymentResponse; amount from stored order total; DEC-001 sandbox: immediate SUCCESS + order → CONFIRMED; 400 missing method, 404 foreign order, 409 ORDER_NOT_PAYABLE
 - GET  /api/v1/orders/{id}/payments      — 200 + PaymentResponse[]; ownership enforced (404 on foreign order)
 
+Implemented (Phase 3E.1 — custom artwork request + admin review + quotation):
+Customer (CUSTOMER role required):
+- POST /api/v1/custom-requests              — 201 + CustomArtworkRequestResponse; initial status REQUESTED
+- GET  /api/v1/custom-requests              — 200 + PageResponse<CustomArtworkRequestSummary>; page/size/status filter
+- GET  /api/v1/custom-requests/{id}         — 200 + CustomArtworkRequestResponse; 404 on foreign/missing id
+- POST /api/v1/custom-requests/{id}/images  — 201 + CustomOrderImageResponse; multipart image/*; DEC-003 size OPEN
+- GET  /api/v1/custom-requests/{id}/quotation — 200 + QuotationResponse; 404 if not owned or no quotation
+Admin (ADMIN role required):
+- GET   /api/v1/admin/custom-requests                — 200 + PageResponse<CustomArtworkRequestSummary>; status filter
+- PATCH /api/v1/admin/custom-requests/{id}/review    — 200 + CustomArtworkRequestResponse; ACCEPT/REJECT; 409 invalid transition
+- POST  /api/v1/admin/custom-requests/{id}/quotation — 201 + QuotationResponse; requires UNDER_REVIEW; 409 duplicate/invalid
+- GET   /api/v1/admin/quotations/{id}                — 200 + QuotationResponse
+
 ## Testing Status
 
 Test strategy approved.
 
-Tests implemented: 19 classes
+Tests implemented: 21 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - AuthControllerTest (default profile — Phase 3A.1: 13 tests)
 - AuthServiceTest (default profile — Phase 3A.1: 8 tests)
@@ -320,14 +335,16 @@ Tests implemented: 19 classes
 - OrderServiceTest (default profile — Phase 3D.2: 6 tests: ORD-S-01..06)
 - PaymentControllerTest (default profile — Phase 3D.2: 8 tests: PAY-C-01..08)
 - PaymentServiceTest (default profile — Phase 3D.2: 9 tests: PAY-S-01..09)
+- CustomArtworkControllerTest (default profile — Phase 3E.1: 15 tests: CAR-C-01..15)
+- CustomArtworkServiceTest (default profile — Phase 3E.1: 20 tests: CAR-S-01..10, QUO-S-01..10)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 190 (Phase 3D.2 verification run)
+Tests executed (default profile): 225 (Phase 3E.1 verification run)
 
-Tests passed (default profile): 190
+Tests passed (default profile): 225
 
 Tests failed (default profile): 0
 
@@ -337,14 +354,18 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3D.2.
+No blocking issues for Phase 3E.1.
 
 DEC-001 (payment provider): DEFERRED — sandbox mock flow (immediate SUCCESS). Real provider integration requires DEC-001 resolution.
-DEC-003 (file upload type/size limits): OPEN — image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
+DEC-003 (file upload type/size limits): OPEN — reference image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
+DEC-004 (requotation): DEFERRED — one quotation per request enforced; re-quotation not implemented.
+DEC-005 (advance payment rule): OPEN — quotation advanceAmount accepted as Admin-entered absolute value. No fixed percentage applied. Required before Phase 3E.2 advance payment implementation.
 DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking via InventoryRepository.findByProductIdWithLock() (@Lock PESSIMISTIC_WRITE). Cart-time check remains advisory.
 DEC-007 (tax/delivery charge): DEFERRED — order totalAmount = subtotalAmount (no tax/delivery).
 DEC-010 (default address): DEFERRED — explicit owned addressId required at checkout; no silent default fallback.
 DEC-006 (order cancellation): OPEN — not implemented; POST /orders/{id}/cancel is out of scope until DEC-006 is resolved.
+
+V5 migration (custom artwork tables): present in classpath; not yet run against live PostgreSQL. Developer should run db-integration suite after Phase 3E.1 commit.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -359,76 +380,88 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 3D.2 — Order Read APIs + Standard Payments + Phase 3D Final Validation — COMPLETED and VERIFIED.
-Phase 3D — Checkout / Orders / Standard Payments — COMPLETED.
+Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED and VERIFIED.
 
 Build verification: `mvn clean test`
-Result: Tests run: 190, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 225, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 Endpoints implemented:
-- GET  /api/v1/orders               — 200 + PageResponse<OrderSummaryResponse>; paginated, newest first
-- GET  /api/v1/orders/{id}          — 200 + OrderResponse; item snapshot values; 404 on foreign id
-- POST /api/v1/orders/{id}/payments — 201 + PaymentResponse; amount from order.totalAmount; DEC-001 sandbox SUCCESS + order → CONFIRMED; 409 ORDER_NOT_PAYABLE if already confirmed/cancelled
-- GET  /api/v1/orders/{id}/payments — 200 + PaymentResponse[]; 404 on foreign order
+Customer (CUSTOMER role):
+- POST /api/v1/custom-requests              — 201 + CustomArtworkRequestResponse; initial status REQUESTED
+- GET  /api/v1/custom-requests              — 200 + PageResponse<CustomArtworkRequestSummary>; page/size/status filter
+- GET  /api/v1/custom-requests/{id}         — 200 + CustomArtworkRequestResponse; 404 on foreign/missing id
+- POST /api/v1/custom-requests/{id}/images  — 201 + CustomOrderImageResponse; image/* only; UUID filename; logical storage reference
+- GET  /api/v1/custom-requests/{id}/quotation — 200 + QuotationResponse; 404 no quotation or foreign request
+Admin (ADMIN role):
+- GET   /api/v1/admin/custom-requests                — 200 + PageResponse<CustomArtworkRequestSummary>; status filter
+- PATCH /api/v1/admin/custom-requests/{id}/review    — 200 + CustomArtworkRequestResponse; ACCEPT/REJECT + notes; 409 invalid transition
+- POST  /api/v1/admin/custom-requests/{id}/quotation — 201 + QuotationResponse; requires UNDER_REVIEW; 409 duplicate/wrong state
+- GET   /api/v1/admin/quotations/{id}                — 200 + QuotationResponse
 
 Ownership enforcement:
-- All operations scope to the authenticated customer's user ID via CurrentUserService.
-- CustomerOrderRepository.findByUserIdAndId(userId, orderId) enforces 404 non-disclosure for foreign orderIds.
-- PaymentService verifies order ownership before any payment access.
+- Customer user ID resolved exclusively from JWT (CurrentUserService) — no client-supplied IDs.
+- Custom request ownership: resolveOwnedRequest() verifies userId match; foreign/missing id → 404 (non-disclosure).
+- Quotation customer view: request ownership verified before quotation lookup.
+- Admin endpoints: ADMIN role enforced by SecurityConfig (/api/v1/admin/**); CUSTOMER → 403.
 
-Order read:
-- Item snapshot values (productNameSnapshot, unitPriceSnapshot, lineTotal) returned as stored; never recalculated from live product prices.
-- Null productId in response is valid (product deleted after purchase; FK ON DELETE SET NULL).
+Admin review workflow:
+- ACCEPT: REQUESTED → UNDER_REVIEW; UNDER_REVIEW → UNDER_REVIEW (re-acknowledge + update notes).
+- REJECT: REQUESTED or UNDER_REVIEW → REJECTED (terminal).
+- Any other transition → InvalidWorkflowTransitionException (409 INVALID_TRANSITION).
+- reviewedBy admin user recorded on request on every review action.
 
-Payment (DEC-001 DEFERRED — mock/sandbox):
-- Amount = order.totalAmount (server-authoritative; never client-supplied).
-- PaymentPurpose = FULL for all standard ready-made orders.
-- Sandbox: immediate SUCCESS, providerTransactionReference = "SANDBOX-{orderId}-{timestamp}".
-- Order transitions PENDING_PAYMENT → CONFIRMED within same transaction.
-- OrderNotPayableException (409 ORDER_NOT_PAYABLE) if order not PENDING_PAYMENT.
-- No raw card number, CVV, PIN, or provider authentication secrets stored.
+Quotation:
+- Admin creates quotation only when request is UNDER_REVIEW.
+- quotedAmount: BigDecimal >= 0; validated by @DecimalMin.
+- advanceAmount: optional absolute value (DEC-005 OPEN — no fixed percentage).
+- expiryAt: must be in the future (validated in service).
+- Status on creation: PENDING. Request transitions UNDER_REVIEW → QUOTED atomically.
+- One quotation per request enforced: duplicate → DuplicateQuotationException (409 DUPLICATE_QUOTATION).
 
-Phase 3D validation result:
-- DEC-009 pessimistic locking scoped to CheckoutService only; CartService remains advisory.
-- Failed checkout leaves no partial state (transactional rollback tests pass).
-- Historical order item snapshot values do not change with catalogue price changes (ORD-S-05).
-- Payment amount derived from stored order total, not recalculated (PAY-S-02).
-- No custom-artwork workflow leaks into standard checkout/payment.
+Reference image handling:
+- Multipart upload; content-type validated as image/*.
+- UUID server-generated filename (prevents path traversal).
+- Binary stored on filesystem (uploads/reference-images/request-{id}/); metadata only in PostgreSQL.
+- storageReference is a logical path; raw filesystem root never exposed.
+- DEC-003 OPEN: no size limit enforced.
 
 Files created:
-- backend/src/main/java/com/handmadeart/ecommerce/dto/order/OrderSummaryResponse.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/order/PaymentResponse.java
-- backend/src/main/java/com/handmadeart/ecommerce/dto/order/PaymentInitiationRequest.java
-- backend/src/main/java/com/handmadeart/ecommerce/exception/OrderNotPayableException.java
-- backend/src/main/java/com/handmadeart/ecommerce/service/OrderService.java
-- backend/src/main/java/com/handmadeart/ecommerce/service/PaymentService.java
-- backend/src/main/java/com/handmadeart/ecommerce/controller/OrderController.java
-- backend/src/main/java/com/handmadeart/ecommerce/controller/PaymentController.java
-- backend/src/test/java/com/handmadeart/ecommerce/OrderServiceTest.java (6 tests: ORD-S-01..06)
-- backend/src/test/java/com/handmadeart/ecommerce/OrderControllerTest.java (6 tests: ORD-C-01..06)
-- backend/src/test/java/com/handmadeart/ecommerce/PaymentServiceTest.java (9 tests: PAY-S-01..09)
-- backend/src/test/java/com/handmadeart/ecommerce/PaymentControllerTest.java (8 tests: PAY-C-01..08)
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/CustomArtworkRequestCreateRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/CustomArtworkRequestResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/CustomArtworkRequestSummary.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/CustomOrderImageResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/QuotationResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/QuotationCreateRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/CustomRequestReviewRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/InvalidWorkflowTransitionException.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/DuplicateQuotationException.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/CustomArtworkRequestService.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/QuotationService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/CustomArtworkController.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminCustomArtworkController.java
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkServiceTest.java (20 tests: CAR-S-01..10, QUO-S-01..10)
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkControllerTest.java (15 tests: CAR-C-01..15)
 
 Files modified:
-- backend/src/main/java/com/handmadeart/ecommerce/repository/CustomerOrderRepository.java
-  (findByUserIdAndId added)
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
+  (/api/v1/custom-requests/** → CUSTOMER role added)
 - backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java
-  (OrderNotPayableException → 409 ORDER_NOT_PAYABLE handler added)
+  (InvalidWorkflowTransitionException → 409 INVALID_TRANSITION; DuplicateQuotationException → 409 DUPLICATE_QUOTATION)
+- backend/src/main/resources/application.yml
+  (app.upload.reference-images externalized)
 - backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java
-  (PaymentRepository mock added)
+  (CustomOrderRequestRepository, CustomOrderImageRepository, QuotationRepository mocks added)
 - backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java
-  (OrderService + PaymentService mocks added)
+  (CustomArtworkRequestService, QuotationService mocks added)
 - project-docs/DEVELOPMENT_STATUS.md
 
-Schema changes: None. V1–V5 unchanged.
+Schema changes: None. V1–V5 unchanged. V5 already present; not yet verified against live DB.
 
-DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented.
-DEC-007 (tax/delivery): DEFERRED — totalAmount = subtotalAmount.
-DEC-009 (inventory concurrency): APPROVED and IMPLEMENTED.
-DEC-010 (default address): DEFERRED.
-DEC-006 (order cancellation): OPEN — not in scope.
+DEC-003 (file upload limits): OPEN — image/* content-type only; no size limit.
+DEC-004 (requotation): DEFERRED — one quotation per request only.
+DEC-005 (advance payment rule): OPEN — advance amount accepted as optional absolute value. BLOCKER for Phase 3E.2 advance payment implementation until decision is made.
 
-PostgreSQL regression: Developer should run full db-integration suite:
+PostgreSQL regression: Developer should run full db-integration suite (V5 not yet verified):
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
 
 ## Prior Last Completed Task (Phase 3D.1)
@@ -644,10 +677,12 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3D.2 complete and verified. Phase 3D Checkout / Orders / Standard Payments COMPLETE.
+None. Phase 3E.1 complete and verified.
 
 ## Next Recommended Task
 
-Phase 3E — Custom Artwork Workflow.
+Phase 3E.2 — Quotation Approval/Rejection + Advance Payment.
 
-Implement POST /custom-requests (submit), GET /custom-requests, GET /custom-requests/{id}, POST /custom-requests/{id}/images (reference upload), and Admin review/quotation/approval endpoints. Requires DEC-003 (file upload type/size limits) to be resolved for reference image upload.
+Implement POST /api/v1/quotations/{id}/approve and POST /api/v1/quotations/{id}/reject (customer decisions).
+Implement POST /api/v1/custom-requests/{id}/payments (advance payment initiation after approval).
+Requires DEC-005 (advance payment rule) to be resolved before advance payment amount logic can be implemented.

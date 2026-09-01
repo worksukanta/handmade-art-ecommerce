@@ -9,8 +9,10 @@ import com.handmadeart.ecommerce.service.CartService;
 import com.handmadeart.ecommerce.service.CheckoutService;
 import com.handmadeart.ecommerce.service.CatalogueService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
+import com.handmadeart.ecommerce.service.CustomArtworkRequestService;
 import com.handmadeart.ecommerce.service.OrderService;
 import com.handmadeart.ecommerce.service.PaymentService;
+import com.handmadeart.ecommerce.service.QuotationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +102,12 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private PaymentService paymentService;
+
+    @MockitoBean
+    private CustomArtworkRequestService customArtworkRequestService;
+
+    @MockitoBean
+    private QuotationService quotationService;
 
     // -------------------------------------------------------------------------
     // Test configuration

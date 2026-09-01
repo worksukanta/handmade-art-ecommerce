@@ -5,6 +5,8 @@ import com.handmadeart.ecommerce.repository.AppUserRepository;
 import com.handmadeart.ecommerce.repository.CartItemRepository;
 import com.handmadeart.ecommerce.repository.CartRepository;
 import com.handmadeart.ecommerce.repository.CategoryRepository;
+import com.handmadeart.ecommerce.repository.CustomOrderImageRepository;
+import com.handmadeart.ecommerce.repository.CustomOrderRequestRepository;
 import com.handmadeart.ecommerce.repository.CustomerOrderRepository;
 import com.handmadeart.ecommerce.repository.InventoryRepository;
 import com.handmadeart.ecommerce.repository.OrderItemRepository;
@@ -12,6 +14,7 @@ import com.handmadeart.ecommerce.repository.PaymentRepository;
 import com.handmadeart.ecommerce.repository.ProductImageRepository;
 import com.handmadeart.ecommerce.repository.ProductRelatedRepository;
 import com.handmadeart.ecommerce.repository.ProductRepository;
+import com.handmadeart.ecommerce.repository.QuotationRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,6 +30,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * CartService requires CartRepository and CartItemRepository — mocked here (Phase 3C.1).
  * CheckoutService requires AddressRepository, CustomerOrderRepository, OrderItemRepository (Phase 3D.1).
  * PaymentService requires PaymentRepository (Phase 3D.2).
+ * CustomArtworkRequestService requires CustomOrderRequestRepository, CustomOrderImageRepository (Phase 3E.1).
+ * QuotationService requires QuotationRepository, CustomOrderRequestRepository (Phase 3E.1).
  */
 @SpringBootTest
 class HandmadeArtEcommerceApplicationTests {
@@ -66,6 +71,15 @@ class HandmadeArtEcommerceApplicationTests {
 
     @MockitoBean
     private PaymentRepository paymentRepository;
+
+    @MockitoBean
+    private CustomOrderRequestRepository customOrderRequestRepository;
+
+    @MockitoBean
+    private CustomOrderImageRepository customOrderImageRepository;
+
+    @MockitoBean
+    private QuotationRepository quotationRepository;
 
     @Test
     void contextLoads() {
