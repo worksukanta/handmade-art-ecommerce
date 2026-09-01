@@ -24,7 +24,7 @@ Result: Tests run: 141, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
-DEC-009 (inventory concurrency strategy) remains OPEN. Cart-time availability check implemented (no stock reservation, no locking). DEC-009 will be resolved at checkout/order-creation phase.
+DEC-009 (inventory concurrency strategy) APPROVED: checkout-time pessimistic locking. Cart checks remain advisory; stock locked/decremented atomically at order creation.
 DEC-007 (tax/delivery charge) remains DEFERRED. Cart totals = item subtotals only.
 
 PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3C.3 regression checkpoint.
@@ -95,7 +95,7 @@ project-docs/
 * [x] Products (Phase 3B.1: public read APIs COMPLETE; Phase 3B.2: admin CRUD COMPLETE)
 * [x] Product Images (Phase 3B.1: included in product detail response; Phase 3B.2: admin upload/remove COMPLETE)
 * [x] Related Products (Phase 3B.1: related products endpoint COMPLETE; Phase 3B.2: admin manage COMPLETE)
-* [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency OPEN)
+* [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency APPROVED: checkout-time pessimistic locking)
 * [x] Cart (Phase 3C.1: customer cart APIs; Phase 3C.2: validation & ownership hardening; Phase 3C.3: integration validation — COMPLETE)
 * [ ] Checkout
 * [ ] Orders
@@ -321,7 +321,7 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 No blocking issues for Phase 3C.1.
 
 DEC-003 (file upload type/size limits): OPEN — image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
-DEC-009 (inventory concurrency strategy): OPEN — cart-time stock check implemented (no reservation, no locking). Will be resolved at checkout/order-creation phase.
+DEC-009 (inventory concurrency strategy): APPROVED — checkout-time pessimistic locking. Cart-time check remains advisory; lock/decrement occurs atomically at order creation.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -331,7 +331,7 @@ See DECISION_LOG.md.
 
 DEC-013 (Flyway as migration framework): APPROVED.
 DEC-010 (default address behavior): DEFERRED.
-DEC-009 (inventory concurrency strategy): OPEN — does not block Phase 2C persistence.
+DEC-009 (inventory concurrency strategy): APPROVED (checkout-time pessimistic locking) — did not block Phase 2C persistence.
 DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task

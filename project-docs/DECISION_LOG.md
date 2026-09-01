@@ -210,17 +210,23 @@ Affected Areas:
 
 ## DEC-009 — Inventory Concurrency Strategy
 
-Status: OPEN
+Status: APPROVED
 
-Issue:
+Decision:
 
-The system must prevent overselling and negative inventory.
+Checkout-time pessimistic locking.
 
-The exact persistence/concurrency implementation mechanism has not yet been selected.
+* Cart stock checks remain advisory only (no reservation, no lock at cart stage).
+* During standard checkout/order creation, load the relevant inventory rows using a database/JPA pessimistic write lock (SELECT … FOR UPDATE) within the checkout transaction.
+* Revalidate all requested quantities while locks are held.
+* If stock is insufficient, abort the transaction — no order is created and no inventory is decremented.
+* If sufficient, create the order, order items, and decrement inventory atomically within the same transaction.
+* Do not reserve stock when adding items to cart.
+* Do not introduce optimistic-lock/version columns or a reservation subsystem.
 
-Required Outcome:
+Rationale:
 
-For concurrent purchases, available stock must never become negative and the same final unit must not be successfully sold twice.
+Prevents overselling during concurrent checkout while fitting the existing schema and MVP scope. No schema changes are required.
 
 Affected Areas:
 
@@ -229,10 +235,6 @@ Affected Areas:
 * Order Creation
 * Database Transactions
 * Concurrency Tests
-
-Decision Required Before:
-
-Final inventory/order transaction implementation.
 
 ---
 
