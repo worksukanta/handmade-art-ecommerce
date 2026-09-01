@@ -28,6 +28,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * - CSRF disabled for stateless REST API (SDD §14 CSRF note).
  * - Route-level authorization rules:
  *     /api/v1/auth/register, /api/v1/auth/login — public (no auth required)
+ *     /api/v1/categories, /api/v1/categories/** — public (catalogue browsing, REST API §6)
+ *     /api/v1/products,   /api/v1/products/**   — public (catalogue browsing, REST API §7)
  *     /api/v1/admin/**                          — ADMIN role required
  *     all other requests                        — authenticated (any role)
  * - @EnableMethodSecurity enables @PreAuthorize for fine-grained method-level
@@ -71,6 +73,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public: registration and login require no authentication
                 .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                // Public: catalogue browsing — categories and products (REST API Spec §6, §7)
+                .requestMatchers("/api/v1/categories", "/api/v1/categories/**").permitAll()
+                .requestMatchers("/api/v1/products", "/api/v1/products/**").permitAll()
                 // Admin-only: all /api/v1/admin/**  paths require the ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // All other requests require a valid authenticated principal (any role)

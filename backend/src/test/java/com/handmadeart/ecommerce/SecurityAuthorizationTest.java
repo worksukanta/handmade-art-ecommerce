@@ -4,6 +4,7 @@ import com.handmadeart.ecommerce.repository.AppUserRepository;
 import com.handmadeart.ecommerce.security.AppUserDetailsService;
 import com.handmadeart.ecommerce.security.JwtService;
 import com.handmadeart.ecommerce.service.AuthService;
+import com.handmadeart.ecommerce.service.CatalogueService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,9 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private AppUserRepository appUserRepository;
+
+    @MockitoBean
+    private CatalogueService catalogueService;
 
     // -------------------------------------------------------------------------
     // Test configuration

@@ -12,18 +12,16 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3A — Authentication & Security Foundation — COMPLETED (Phase 3A.1 + 3A.2 + 3A.3)
+Phase 3B.1 — Public Catalogue APIs — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3A.3 — Authentication & Security Integration Validation — COMPLETED and VERIFIED.
+Phase 3B.1 — Public Catalogue APIs — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 35, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 54, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
-
-PostgreSQL regression (db-integration suite, Phase 2A–2D): NOT re-run in Phase 3A.3 — no persistence changes made. Developer should run full db-integration suite as final Phase 3A regression checkpoint before moving to Phase 3B.
 
 ## Overall Status
 
@@ -42,6 +40,8 @@ Phase 3A.1 — Authentication Foundation implemented: Spring Security (JWT-based
 Phase 3A.2 — Authorization Foundation implemented: ApiAccessDeniedHandler (structured 403), CurrentUserService (ownership-resolution utility), SecurityAuthorizationTest (8 authorization tests).
 
 Phase 3A.3 — Authentication & Security Integration Validation COMPLETED: defect fixed (DaoAuthenticationProvider deprecated no-arg constructor → DaoAuthenticationProvider(PasswordEncoder) constructor), CurrentUserService unit tests added (5 tests). All 35 tests pass (default profile, no PostgreSQL required): 13 controller + 8 AuthService + 5 CurrentUserService + 8 SecurityAuthorization + 1 contextLoads.
+
+Phase 3B.1 — Public Catalogue APIs COMPLETED: category listing, category detail, product listing with search/filter/sort/pagination, product detail with images and availability and related products, related products list. Security config updated to permit catalogue public endpoints. ResourceNotFoundException + GlobalExceptionHandler handler added. All 54 tests pass.
 
 Frontend not started.
 
@@ -78,14 +78,14 @@ project-docs/
 
 * [x] Spring Boot Project Initialization
 * [x] Database Foundation (Phase 2A–2F complete — Database Foundation phase COMPLETE)
-* [x] Authentication and Authorization (Phase 3A.1 + 3A.2 + 3A.3 COMPLETE — Phase 3B not started)
+* [x] Authentication and Authorization (Phase 3A COMPLETE)
 * [ ] Customer Profile
 * [ ] Address Management
-* [ ] Categories
-* [ ] Products
-* [ ] Product Images
-* [ ] Related Products
-* [ ] Inventory
+* [-] Categories (Phase 3B.1: public read APIs COMPLETE — admin CRUD in Phase 3B.2)
+* [-] Products (Phase 3B.1: public read APIs COMPLETE — admin CRUD in Phase 3B.2)
+* [-] Product Images (Phase 3B.1: included in product detail response — admin upload in Phase 3B.2)
+* [-] Related Products (Phase 3B.1: related products endpoint COMPLETE — admin manage in Phase 3B.2)
+* [ ] Inventory (admin mutation in Phase 3B.2; availability exposed in product detail)
 * [ ] Cart
 * [ ] Checkout
 * [ ] Orders
@@ -246,24 +246,33 @@ Implemented (Phase 3A.1):
 - POST /api/v1/auth/login   — 200 + LoginResponse (access token + user summary); 400; 401
 - GET  /api/v1/auth/me      — 200 + UserResponse; 401 unauthenticated
 
+Implemented (Phase 3B.1 — public catalogue, no auth required):
+- GET /api/v1/categories              — 200 + CategoryResponse[] (ACTIVE only)
+- GET /api/v1/categories/{id}         — 200 + CategoryResponse; 404 if INACTIVE/missing
+- GET /api/v1/products                — 200 + PageResponse<ProductSummaryResponse>; q/categoryId/minPrice/maxPrice/sort/direction/page/size; 400 invalid sort
+- GET /api/v1/products/{id}           — 200 + ProductDetailResponse (images, availability, related); 404 if INACTIVE/missing
+- GET /api/v1/products/{id}/related-products — 200 + ProductSummaryResponse[]; 404 if source inactive/missing
+
 ## Testing Status
 
 Test strategy approved.
 
-Tests implemented: 9 classes
+Tests implemented: 11 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - AuthControllerTest (default profile — Phase 3A.1: 13 tests)
 - AuthServiceTest (default profile — Phase 3A.1: 8 tests)
 - SecurityAuthorizationTest (default profile — Phase 3A.2: 8 tests)
 - CurrentUserServiceTest (default profile — Phase 3A.3: 5 tests)
+- CatalogueControllerTest (default profile — Phase 3B.1: 9 tests)
+- CatalogueServiceTest (default profile — Phase 3B.1: 10 tests)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 35 (Phase 3A.3 final validation run)
+Tests executed (default profile): 54 (Phase 3B.1 verification run)
 
-Tests passed (default profile): 35
+Tests passed (default profile): 54
 
 Tests failed (default profile): 0
 
