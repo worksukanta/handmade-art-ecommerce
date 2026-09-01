@@ -1,7 +1,11 @@
 package com.handmadeart.ecommerce.repository;
 
 import com.handmadeart.ecommerce.entity.Inventory;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -20,6 +24,20 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
      * Equivalent to findById(productId) but named explicitly for readability.
      */
     Optional<Inventory> findByProductId(Long productId);
+
+    /**
+     * Find and pessimistically lock the inventory row for a product.
+     *
+     * DEC-009 APPROVED: checkout-time pessimistic locking.
+     * Issues SELECT … FOR UPDATE when called inside an active transaction,
+     * preventing concurrent checkouts from reading or modifying the same row
+     * until the transaction commits or rolls back.
+     *
+     * Must only be called from within a {@code @Transactional} boundary.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Inventory i WHERE i.productId = :productId")
+    Optional<Inventory> findByProductIdWithLock(@Param("productId") Long productId);
 
     /**
      * Check whether an inventory record exists for a product.

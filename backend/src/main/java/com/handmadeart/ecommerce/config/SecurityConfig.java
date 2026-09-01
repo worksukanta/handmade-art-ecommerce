@@ -80,6 +80,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Customer cart: REST API Spec §8 specifies CUSTOMER role for all cart endpoints
                 .requestMatchers("/api/v1/cart", "/api/v1/cart/**").hasRole("CUSTOMER")
+                // Customer orders: REST API Spec §9/§10 CUSTOMER role for order creation and history
+                .requestMatchers("/api/v1/orders", "/api/v1/orders/**").hasRole("CUSTOMER")
                 // All other requests require a valid authenticated principal (any role)
                 .anyRequest().authenticated()
             )

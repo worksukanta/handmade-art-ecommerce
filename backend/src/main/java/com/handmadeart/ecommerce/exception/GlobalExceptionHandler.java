@@ -180,6 +180,27 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------------------------------------------------------------
+    // 409 — Checkout: cart is empty
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when checkout/order-creation is attempted with an empty cart.
+     * Mapped to 409 per REST API Spec §9 "409 stock/availability/empty cart".
+     */
+    @ExceptionHandler(EmptyCartException.class)
+    public ResponseEntity<ApiError> handleEmptyCart(
+            EmptyCartException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "EMPTY_CART",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
     // 409 — Cart: product not purchasable (INACTIVE or PORTFOLIO_ONLY)
     // -------------------------------------------------------------------------
 

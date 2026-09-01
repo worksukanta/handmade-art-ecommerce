@@ -12,22 +12,22 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3C.3 — Cart Integration Validation — COMPLETED
-Phase 3C — Cart — COMPLETED
+Phase 3D.1 — Standard Checkout & Order Creation — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3C.3 — Cart Integration Validation — COMPLETED and VERIFIED.
+Phase 3D.1 — Standard Checkout & Order Creation — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 141, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 161, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
-DEC-009 (inventory concurrency strategy) APPROVED: checkout-time pessimistic locking. Cart checks remain advisory; stock locked/decremented atomically at order creation.
-DEC-007 (tax/delivery charge) remains DEFERRED. Cart totals = item subtotals only.
+DEC-009 (inventory concurrency strategy): APPROVED — checkout-time pessimistic locking implemented (SELECT FOR UPDATE via @Lock PESSIMISTIC_WRITE on InventoryRepository.findByProductIdWithLock()).
+DEC-007 (tax/delivery charge) remains DEFERRED. Order totals = item subtotals only (totalAmount = subtotalAmount).
+DEC-010 (default address) remains DEFERRED. Explicit owned addressId required; no silent fallback.
 
-PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3C.3 regression checkpoint.
+PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3D.1 regression checkpoint.
 
 ## Overall Status
 
@@ -97,8 +97,8 @@ project-docs/
 * [x] Related Products (Phase 3B.1: related products endpoint COMPLETE; Phase 3B.2: admin manage COMPLETE)
 * [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency APPROVED: checkout-time pessimistic locking)
 * [x] Cart (Phase 3C.1: customer cart APIs; Phase 3C.2: validation & ownership hardening; Phase 3C.3: integration validation — COMPLETE)
-* [ ] Checkout
-* [ ] Orders
+* [x] Checkout (Phase 3D.1: POST /api/v1/orders checkout flow with pessimistic locking — COMPLETE)
+* [x] Orders (Phase 3D.1: order creation, address snapshot, OrderItem snapshots — COMPLETE; GET list/detail NOT YET IMPLEMENTED)
 * [ ] Payments
 * [ ] Custom Artwork Requests
 * [ ] Reference Image Upload
@@ -285,11 +285,14 @@ Implemented (Phase 3C.1 — customer cart, CUSTOMER role required):
 - DELETE /api/v1/cart/items/{itemId}           — 200 + CartResponse; 401, 404 item/not-owned
 - DELETE /api/v1/cart/items                    — 204 No Content; 401
 
+Implemented (Phase 3D.1 — checkout/order creation, CUSTOMER role required):
+- POST /api/v1/orders — 201 + OrderResponse; addressId required (owned); cart resolved server-side; pessimistic inventory lock/decrement; cart cleared; 400 missing addressId, 401, 403 ADMIN, 404 address not owned, 409 empty cart / insufficient stock / non-purchasable product
+
 ## Testing Status
 
 Test strategy approved.
 
-Tests implemented: 13 classes
+Tests implemented: 15 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - AuthControllerTest (default profile — Phase 3A.1: 13 tests)
 - AuthServiceTest (default profile — Phase 3A.1: 8 tests)
@@ -301,14 +304,16 @@ Tests implemented: 13 classes
 - AdminCatalogueServiceTest (default profile — Phase 3B.2/3B.3: 24 tests — 3 added in 3B.3)
 - CartControllerTest (default profile — Phase 3C.1/3C.2/3C.3: 20 tests)
 - CartServiceTest (default profile — Phase 3C.1/3C.2: 24 tests)
+- CheckoutControllerTest (default profile — Phase 3D.1: 8 tests: CHK-C-01..08)
+- CheckoutServiceTest (default profile — Phase 3D.1: 12 tests: CHK-S-01..12)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 141 (Phase 3C.3 verification run)
+Tests executed (default profile): 161 (Phase 3D.1 verification run)
 
-Tests passed (default profile): 141
+Tests passed (default profile): 161
 
 Tests failed (default profile): 0
 
@@ -318,10 +323,12 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3C.1.
+No blocking issues for Phase 3D.1.
 
 DEC-003 (file upload type/size limits): OPEN — image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
-DEC-009 (inventory concurrency strategy): APPROVED — checkout-time pessimistic locking. Cart-time check remains advisory; lock/decrement occurs atomically at order creation.
+DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking via InventoryRepository.findByProductIdWithLock() (@Lock PESSIMISTIC_WRITE). Cart-time check remains advisory.
+DEC-007 (tax/delivery charge): DEFERRED — order totalAmount = subtotalAmount (no tax/delivery).
+DEC-010 (default address): DEFERRED — explicit owned addressId required at checkout; no silent default fallback.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -336,41 +343,74 @@ DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance 
 
 ## Last Completed Task
 
-Phase 3C.3 — Cart Integration Validation — COMPLETED and VERIFIED.
+Phase 3D.1 — Standard Checkout & Order Creation — COMPLETED and VERIFIED.
 
 Build verification: `mvn clean test`
-Result: Tests run: 141, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 161, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
-Defect found and fixed:
-- SecurityConfig used `anyRequest().authenticated()` for all cart endpoints. REST API Spec §8
-  (tables 28–32) specifies "Authorized roles: CUSTOMER" for all 5 cart endpoints. ADMIN role
-  must be rejected with 403. Fixed by adding explicit `hasRole("CUSTOMER")` rule for
-  `/api/v1/cart` and `/api/v1/cart/**` before the `anyRequest()` catch-all in SecurityConfig.
+Endpoint implemented:
+- POST /api/v1/orders — 201 + OrderResponse
+  Authorization: CUSTOMER role required (ADMIN → 403, unauthenticated → 401).
+  Transaction flow (DEC-009 APPROVED — pessimistic locking):
+    1. Verify customer owns addressId → 404 if foreign/missing (non-disclosure)
+    2. Resolve cart items → 409 EMPTY_CART if cart absent or empty
+    3. Re-validate each product: READY_MADE + ACTIVE required → 409 PRODUCT_NOT_PURCHASABLE
+    4. Acquire pessimistic write lock on inventory row (SELECT FOR UPDATE)
+    5. Re-validate stock while lock held → 409 INSUFFICIENT_STOCK
+    6. Create CustomerOrder (status=PENDING_PAYMENT, address snapshot fields)
+    7. Compute subtotal via BigDecimal from current product.price (server-authoritative)
+    8. Create OrderItem snapshots (productNameSnapshot, unitPriceSnapshot, lineTotal)
+    9. Decrement inventory.quantityOnHand for each item
+   10. Clear cart items (cart record preserved)
+   11. Return OrderResponse
 
-Validation results: all Phase 3C cart behaviors confirmed correct against approved specification:
-- GET /api/v1/cart → 200 CartResponse; empty cart returns cartId=null, items=[], total=0; no DB write
-- POST /api/v1/cart/items → lazy cart create; READY_MADE+ACTIVE only; quantity accumulation; stock check
-- PUT /api/v1/cart/items/{itemId} → ownership-scoped update; stock check; 404 on cross-user item
-- DELETE /api/v1/cart/items/{itemId} → ownership-scoped removal; 200 + updated cart
-- DELETE /api/v1/cart/items → clear items, preserve cart record; 204
-- All responses: server-calculated prices; BigDecimal; no client prices trusted; no persisted price
-- Transactions: class-level @Transactional; getCart readOnly; lazy creation atomic with addItem
-- Repository: findByCartIdAndId scopes ownership at SQL level; no in-memory cross-user filtering
+Ownership enforcement:
+- Identity resolved from JWT via CurrentUserService; no client-supplied user/cart IDs trusted.
+- Address verified via findByUserIdAndId(userId, addressId) — 404 on foreign/missing (same semantics as owned resources in Phase 3C).
+- Cart resolved server-side from authenticated user's ID.
 
-Test added:
-- CART-C-20: ADMIN JWT → GET /cart → 403 (REST API Spec §8 CUSTOMER role enforcement)
+Product eligibility:
+- Re-validated at checkout time: productType == READY_MADE && status == ACTIVE.
+- CUSTOM_AVAILABLE, PORTFOLIO_ONLY, INACTIVE rejected (same as cart-add eligibility check).
+
+Pricing:
+- Server-authoritative: subtotal and total computed from current product.price at checkout time.
+- DEC-007 DEFERRED: totalAmount = subtotalAmount (no tax, no delivery charge).
+- OrderItem.unitPriceSnapshot captures purchase-time price for historical traceability.
+
+InventoryRepository:
+- findByProductIdWithLock(@Lock(LockModeType.PESSIMISTIC_WRITE)) added for exclusive lock path.
+- Existing findByProductId() unchanged (used by advisory cart-time check in CartService).
+
+Files created:
+- backend/src/main/java/com/handmadeart/ecommerce/exception/EmptyCartException.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/CreateOrderRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/OrderItemResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/OrderResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/CheckoutService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/CheckoutController.java
+- backend/src/test/java/com/handmadeart/ecommerce/CheckoutServiceTest.java (12 tests: CHK-S-01..12)
+- backend/src/test/java/com/handmadeart/ecommerce/CheckoutControllerTest.java (8 tests: CHK-C-01..08)
 
 Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/repository/InventoryRepository.java
+  (findByProductIdWithLock added)
+- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java
+  (EmptyCartException → 409 EMPTY_CART handler added)
 - backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
-  (cart paths: anyRequest().authenticated() → hasRole("CUSTOMER"))
-- backend/src/test/java/com/handmadeart/ecommerce/CartControllerTest.java
-  (CART-C-20 added; CART-C-18 description corrected)
+  (/api/v1/orders/** → hasRole("CUSTOMER"))
+- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java
+  (AddressRepository, CustomerOrderRepository, OrderItemRepository mocks added)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java
+  (CheckoutService mock + import added)
 - project-docs/DEVELOPMENT_STATUS.md
 
 Schema changes: None. V1–V5 unchanged.
 
-DEC-009 (inventory concurrency strategy): OPEN — advisory stock check; no reservation, no locking.
-DEC-007 (tax/delivery charge): DEFERRED — totals = item subtotals only.
+DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — pessimistic locking at checkout.
+DEC-007 (tax/delivery charge): DEFERRED — totalAmount = subtotalAmount.
+DEC-010 (default address): DEFERRED — explicit owned addressId required; no fallback.
+DEC-006 (order cancellation): OPEN — not in scope for Phase 3D.1.
 
 PostgreSQL regression: Developer should run full db-integration suite:
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
@@ -579,10 +619,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3C.3 complete and verified. Phase 3C Cart module COMPLETE.
+None. Phase 3D.1 complete and verified.
 
 ## Next Recommended Task
 
-Phase 3D — Checkout / Orders / Payments.
+Phase 3D.2 — Order Read APIs.
 
-Implement POST /api/v1/checkout/validate, POST /api/v1/orders (create order from cart), GET /api/v1/orders, GET /api/v1/orders/{id}, POST /api/v1/payments/orders/{orderId}. Requires DEC-009 (inventory concurrency) to be resolved before order creation.
+Implement GET /api/v1/orders (paginated list of authenticated customer's orders) and GET /api/v1/orders/{id} (single order detail with items). CUSTOMER role required. Ownership enforced via CurrentUserService.

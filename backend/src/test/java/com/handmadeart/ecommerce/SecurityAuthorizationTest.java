@@ -6,6 +6,7 @@ import com.handmadeart.ecommerce.security.JwtService;
 import com.handmadeart.ecommerce.service.AdminCatalogueService;
 import com.handmadeart.ecommerce.service.AuthService;
 import com.handmadeart.ecommerce.service.CartService;
+import com.handmadeart.ecommerce.service.CheckoutService;
 import com.handmadeart.ecommerce.service.CatalogueService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
 import org.junit.jupiter.api.DisplayName;
@@ -88,6 +89,9 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private CartService cartService;
+
+    @MockitoBean
+    private CheckoutService checkoutService;
 
     // -------------------------------------------------------------------------
     // Test configuration
