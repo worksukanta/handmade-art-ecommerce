@@ -25,6 +25,14 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     Optional<CartItem> findByCartIdAndProductId(Long cartId, Long productId);
 
     /**
+     * Find a specific cart item scoped to a given cart.
+     * Used for ownership-safe retrieval of update/remove targets: the query is
+     * scoped through the authenticated user's cartId so a foreign item cannot
+     * be reached even before the application-level ownership check runs.
+     */
+    Optional<CartItem> findByCartIdAndId(Long cartId, Long id);
+
+    /**
      * Count the number of distinct line items in the specified cart.
      */
     long countByCartId(Long cartId);

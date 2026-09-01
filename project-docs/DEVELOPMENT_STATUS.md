@@ -12,20 +12,20 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3B.3 — Catalogue Integration Validation — COMPLETED
+Phase 3C.2 — Cart Validation & Ownership — COMPLETED
 
 ## Last Verified Milestone
 
-Phase 3B.3 — Catalogue Integration Validation — COMPLETED and VERIFIED.
+Phase 3C.2 — Cart Validation & Ownership — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 97, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 140, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
-DEC-009 (inventory concurrency strategy) remains OPEN. Basic admin inventory management implemented; no locking introduced.
+DEC-009 (inventory concurrency strategy) remains OPEN. Cart-time availability check implemented (no stock reservation, no locking). DEC-009 will be resolved at checkout/order-creation phase.
 
-PostgreSQL regression: NOT executed in this phase. No persistence behavior was modified. Developer should run the full db-integration suite as the final Phase 3B regression checkpoint.
+PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3C.2 regression checkpoint.
 
 ## Overall Status
 
@@ -94,7 +94,7 @@ project-docs/
 * [x] Product Images (Phase 3B.1: included in product detail response; Phase 3B.2: admin upload/remove COMPLETE)
 * [x] Related Products (Phase 3B.1: related products endpoint COMPLETE; Phase 3B.2: admin manage COMPLETE)
 * [x] Inventory (Phase 3B.2: admin GET/PATCH inventory COMPLETE — DEC-009 concurrency OPEN)
-* [ ] Cart
+* [-] Cart (Phase 3C.1: customer cart APIs COMPLETE; Phase 3C.2: cart validation & ownership COMPLETE — checkout/order not yet started)
 * [ ] Checkout
 * [ ] Orders
 * [ ] Payments
@@ -276,11 +276,18 @@ Implemented (Phase 3B.2 — admin catalogue management, ADMIN role required):
 - GET   /api/v1/admin/inventory/{productId}    — 200 + InventoryResponse; 404
 - PATCH /api/v1/admin/inventory/{productId}    — 200 + InventoryResponse; 400 negative, 404, 409 PORTFOLIO_ONLY
 
+Implemented (Phase 3C.1 — customer cart, CUSTOMER role required):
+- GET    /api/v1/cart                          — 200 + CartResponse; lazy empty cart if none exists; 401
+- POST   /api/v1/cart/items                    — 200 + CartResponse; lazy cart create; 400 invalid qty/type, 401, 404 product, 409 not-purchasable/stock
+- PUT    /api/v1/cart/items/{itemId}           — 200 + CartResponse; 400 invalid qty, 401, 404 item/not-owned, 409 stock
+- DELETE /api/v1/cart/items/{itemId}           — 200 + CartResponse; 401, 404 item/not-owned
+- DELETE /api/v1/cart/items                    — 204 No Content; 401
+
 ## Testing Status
 
 Test strategy approved.
 
-Tests implemented: 11 classes
+Tests implemented: 13 classes
 - HandmadeArtEcommerceApplicationTests.contextLoads (default profile)
 - AuthControllerTest (default profile — Phase 3A.1: 13 tests)
 - AuthServiceTest (default profile — Phase 3A.1: 8 tests)
@@ -290,14 +297,16 @@ Tests implemented: 11 classes
 - CatalogueServiceTest (default profile — Phase 3B.1: 10 tests)
 - AdminCatalogueControllerTest (default profile — Phase 3B.2: 19 tests)
 - AdminCatalogueServiceTest (default profile — Phase 3B.2/3B.3: 24 tests — 3 added in 3B.3)
+- CartControllerTest (default profile — Phase 3C.1/3C.2: 19 tests)
+- CartServiceTest (default profile — Phase 3C.1/3C.2: 24 tests)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 97 (Phase 3B.3 verification run)
+Tests executed (default profile): 140 (Phase 3C.2 verification run)
 
-Tests passed (default profile): 97
+Tests passed (default profile): 140
 
 Tests failed (default profile): 0
 
@@ -307,10 +316,10 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3B.3.
+No blocking issues for Phase 3C.1.
 
 DEC-003 (file upload type/size limits): OPEN — image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
-DEC-009 (inventory concurrency strategy): OPEN — no locking column added yet. Basic admin inventory management implemented. Will be resolved in the appropriate transactional implementation phase.
+DEC-009 (inventory concurrency strategy): OPEN — cart-time stock check implemented (no reservation, no locking). Will be resolved at checkout/order-creation phase.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -324,6 +333,96 @@ DEC-009 (inventory concurrency strategy): OPEN — does not block Phase 2C persi
 DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task
+
+Phase 3C.2 — Cart Validation & Ownership — COMPLETED and VERIFIED.
+
+Build verification: `mvn clean test`
+Result: Tests run: 140, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Defect fixed:
+- CartService.requirePurchasableProduct() previously allowed CUSTOM_AVAILABLE products into the cart.
+  SRS FR-CART-01 and REST API Spec §18 state "only eligible ready-made products can be added to cart."
+  CUSTOM_AVAILABLE follows the commissioned custom-artwork workflow, not the cart/checkout flow.
+  Fix: productType check is now `== READY_MADE` (not just "!= PORTFOLIO_ONLY").
+  CUSTOM_AVAILABLE products now return 409 PRODUCT_NOT_PURCHASABLE.
+
+Ownership hardening:
+- CartItemRepository.findByCartIdAndId(cartId, itemId) added — cart-scoped item lookup.
+- CartService.requireOwnedItem() refactored to use findByCartIdAndId: ownership is enforced at the
+  query level, so a foreign item ID cannot be resolved even before the application-level check runs.
+
+Tests added (4 new):
+- CART-S-22: addItem with CUSTOM_AVAILABLE product → ProductNotPurchasableException (FR-CART-01)
+- CART-S-23: total is recalculated from current product prices (two READY_MADE items, distinct subtotals)
+- CART-S-24: getCart with no existing cart → cartId is null, total is zero (no cart record created)
+- CART-C-19: POST /cart/items with CUSTOM_AVAILABLE product → 409 PRODUCT_NOT_PURCHASABLE
+
+Tests corrected:
+- CART-S-21: product p2 type changed from CUSTOM_AVAILABLE to READY_MADE (previously used an
+  impossible cart state for total-calculation test; no behaviour change — test still valid).
+- CART-S-12..18: mocks updated from findById(itemId) to findByCartIdAndId(cartId, itemId) to
+  align with the refactored ownership query.
+- CART-S-08: assertion updated to expect "ready-made" in the exception message.
+
+Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/service/CartService.java
+  (requirePurchasableProduct: CUSTOM_AVAILABLE now rejected; requireOwnedItem: cart-scoped query;
+   checkStockAvailability: defensive guard updated; Javadoc updated)
+- backend/src/main/java/com/handmadeart/ecommerce/repository/CartItemRepository.java
+  (findByCartIdAndId added)
+- backend/src/test/java/com/handmadeart/ecommerce/CartServiceTest.java
+  (4 new tests added: CART-S-22/23/24; CART-S-21 corrected; mock stubs updated)
+- backend/src/test/java/com/handmadeart/ecommerce/CartControllerTest.java
+  (CART-C-19 added)
+- project-docs/DEVELOPMENT_STATUS.md
+
+Schema changes: None. V1–V5 unchanged.
+
+DEC-009 (inventory concurrency strategy): OPEN — advisory stock check at cart time only; no reservation, no locking.
+
+PostgreSQL regression: Developer should run full db-integration suite:
+  mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+
+## Prior Last Completed Task (Phase 3C.1)
+
+Phase 3C.1 — Cart Core APIs — COMPLETED and VERIFIED.
+
+Build verification: `mvn clean test`
+Result: Tests run: 136, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Cart endpoints implemented:
+- GET    /api/v1/cart                — retrieve current user's cart (lazy empty if none)
+- POST   /api/v1/cart/items         — add product to cart (lazy cart create; accumulate if duplicate)
+- PUT    /api/v1/cart/items/{itemId}— update cart item quantity (stock check; ownership enforced)
+- DELETE /api/v1/cart/items/{itemId}— remove single cart item (200 + updated cart)
+- DELETE /api/v1/cart/items         — clear all cart items (204, cart record preserved)
+
+Files created:
+- backend/src/main/java/com/handmadeart/ecommerce/exception/ProductNotPurchasableException.java
+- backend/src/main/java/com/handmadeart/ecommerce/exception/InsufficientStockException.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/cart/AddCartItemRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/cart/UpdateCartItemRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/cart/CartItemResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/cart/CartResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/CartService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/CartController.java
+- backend/src/test/java/com/handmadeart/ecommerce/CartControllerTest.java (18 tests: CART-C-01..CART-C-18)
+- backend/src/test/java/com/handmadeart/ecommerce/CartServiceTest.java (21 tests: CART-S-01..CART-S-21)
+
+Files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/exception/GlobalExceptionHandler.java (ProductNotPurchasableException + InsufficientStockException handlers)
+- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java (CartRepository + CartItemRepository mocks)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java (CartService mock added)
+- project-docs/DEVELOPMENT_STATUS.md
+
+Schema changes: None. V1–V5 unchanged.
+
+DEC-009 (inventory concurrency strategy): OPEN — advisory stock check at cart time only; no reservation, no locking.
+
+PostgreSQL regression: Developer should run full db-integration suite:
+  mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+
+## Prior Last Completed Task (Phase 3B.3)
 
 Phase 3B.3 — Catalogue Integration Validation — COMPLETED and VERIFIED.
 
@@ -437,10 +536,10 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3B.3 complete and verified. Awaiting Phase 3C prompt.
+None. Phase 3C.2 complete and verified. Awaiting Phase 3C.3 prompt.
 
 ## Next Recommended Task
 
-Phase 3C — Cart APIs.
+Phase 3C.3 — Cart Regression & Cross-User Isolation Validation.
 
-Implement customer cart management: add item, update quantity, remove item, view cart, clear cart. Requires authenticated customer identity from JWT (ownership from SecurityContextHolder, not client-supplied user IDs). Inventory availability check (no reservation — DEC-009 deferred to checkout).
+Verify full Phase 3C cart API cross-user isolation, ownership boundaries, product-type eligibility, and stock rules against a live PostgreSQL database; confirm all cart db-integration test scenarios pass.

@@ -1,6 +1,8 @@
 package com.handmadeart.ecommerce;
 
 import com.handmadeart.ecommerce.repository.AppUserRepository;
+import com.handmadeart.ecommerce.repository.CartItemRepository;
+import com.handmadeart.ecommerce.repository.CartRepository;
 import com.handmadeart.ecommerce.repository.CategoryRepository;
 import com.handmadeart.ecommerce.repository.InventoryRepository;
 import com.handmadeart.ecommerce.repository.ProductImageRepository;
@@ -18,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * DataSource and JPA auto-configuration (no PostgreSQL needed for this test).
  * All repositories transitively required by the full Spring context must be listed here.
  * AdminCatalogueService uses @Value for upload dir — no additional mock needed (uses default).
+ * CartService requires CartRepository and CartItemRepository — mocked here (Phase 3C.1).
  */
 @SpringBootTest
 class HandmadeArtEcommerceApplicationTests {
@@ -39,6 +42,12 @@ class HandmadeArtEcommerceApplicationTests {
 
     @MockitoBean
     private InventoryRepository inventoryRepository;
+
+    @MockitoBean
+    private CartRepository cartRepository;
+
+    @MockitoBean
+    private CartItemRepository cartItemRepository;
 
     @Test
     void contextLoads() {

@@ -180,6 +180,49 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------------------------------------------------------------
+    // 409 — Cart: product not purchasable (INACTIVE or PORTFOLIO_ONLY)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when a customer tries to add a non-purchasable product to cart.
+     * Mapped to 409 per REST API Spec §8 "Add cart item" error codes.
+     */
+    @ExceptionHandler(ProductNotPurchasableException.class)
+    public ResponseEntity<ApiError> handleProductNotPurchasable(
+            ProductNotPurchasableException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "PRODUCT_NOT_PURCHASABLE",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 — Cart: insufficient stock for requested quantity
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when a requested cart quantity exceeds available stock.
+     * Mapped to 409 per REST API Spec §8 "Add/Update cart item" error codes.
+     * DEC-009 (inventory concurrency) remains OPEN.
+     */
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ApiError> handleInsufficientStock(
+            InsufficientStockException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "INSUFFICIENT_STOCK",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
     // 404 — No handler / resource not found
     // -------------------------------------------------------------------------
 
