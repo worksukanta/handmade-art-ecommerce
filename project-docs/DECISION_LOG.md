@@ -120,28 +120,23 @@ Affected Areas:
 
 ---
 
-## DEC-005 — Advance Payment Rule
+### DEC-005 — Custom Artwork Advance Payment Rule
 
-Status: OPEN
+**Status:** APPROVED
 
-Issue:
+For custom artwork orders, the quotation stores the authoritative
+`advancePaymentAmount`.
 
-The system supports an advance payment for approved custom artwork quotations, but no fixed percentage such as 30% or 50% is approved.
-
-Current Direction:
-
-The quotation should carry an explicit approved advance amount rather than calculating an invented fixed percentage.
-
-Affected Areas:
-
-* Quotation
-* Advance Payment
-* Payment
-* Testing
-
-Decision Required Before:
-
-Quotation/payment implementation.
+Rules:
+- Admin defines the advance amount when creating the quotation.
+- advancePaymentAmount must be greater than 0.
+- advancePaymentAmount must not exceed quotedAmount.
+- Customer cannot supply or modify the authoritative advance amount.
+- Advance payment is allowed only after the quotation has been approved.
+- Payment must use the stored quotation advancePaymentAmount.
+- No percentage-based advance calculation is inferred.
+- Remaining-balance collection is outside the current MVP unless explicitly
+  required by an approved specification.
 
 ---
 
