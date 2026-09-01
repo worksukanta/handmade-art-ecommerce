@@ -8,6 +8,7 @@ import com.handmadeart.ecommerce.repository.CategoryRepository;
 import com.handmadeart.ecommerce.repository.CustomerOrderRepository;
 import com.handmadeart.ecommerce.repository.InventoryRepository;
 import com.handmadeart.ecommerce.repository.OrderItemRepository;
+import com.handmadeart.ecommerce.repository.PaymentRepository;
 import com.handmadeart.ecommerce.repository.ProductImageRepository;
 import com.handmadeart.ecommerce.repository.ProductRelatedRepository;
 import com.handmadeart.ecommerce.repository.ProductRepository;
@@ -25,6 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * AdminCatalogueService uses @Value for upload dir — no additional mock needed (uses default).
  * CartService requires CartRepository and CartItemRepository — mocked here (Phase 3C.1).
  * CheckoutService requires AddressRepository, CustomerOrderRepository, OrderItemRepository (Phase 3D.1).
+ * PaymentService requires PaymentRepository (Phase 3D.2).
  */
 @SpringBootTest
 class HandmadeArtEcommerceApplicationTests {
@@ -61,6 +63,9 @@ class HandmadeArtEcommerceApplicationTests {
 
     @MockitoBean
     private OrderItemRepository orderItemRepository;
+
+    @MockitoBean
+    private PaymentRepository paymentRepository;
 
     @Test
     void contextLoads() {

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository for {@link CustomerOrder}.
@@ -31,4 +32,11 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
      * Find orders by customer and status — customer-facing filtered history.
      */
     List<CustomerOrder> findByUserIdAndStatus(Long userId, OrderStatus status);
+
+    /**
+     * Ownership-safe single order lookup: finds an order only if it belongs to
+     * the given user. Returns empty if the order exists but belongs to another
+     * user, preventing cross-user disclosure (BR-06, REST API Spec §10).
+     */
+    Optional<CustomerOrder> findByUserIdAndId(Long userId, Long orderId);
 }

@@ -1,6 +1,7 @@
 package com.handmadeart.ecommerce.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import com.handmadeart.ecommerce.exception.OrderNotPayableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -237,6 +238,27 @@ public class GlobalExceptionHandler {
         ApiError error = new ApiError(
                 HttpStatus.CONFLICT.value(),
                 "INSUFFICIENT_STOCK",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // -------------------------------------------------------------------------
+    // 409 — Payment: order not in a payable state
+    // -------------------------------------------------------------------------
+
+    /**
+     * Thrown when a payment is initiated on an order that is not PENDING_PAYMENT.
+     * Mapped to 409 per REST API Spec §11 "409 invalid payable state".
+     */
+    @ExceptionHandler(OrderNotPayableException.class)
+    public ResponseEntity<ApiError> handleOrderNotPayable(
+            OrderNotPayableException ex, HttpServletRequest request) {
+
+        ApiError error = new ApiError(
+                HttpStatus.CONFLICT.value(),
+                "ORDER_NOT_PAYABLE",
                 ex.getMessage(),
                 request.getRequestURI()
         );
