@@ -2,23 +2,32 @@
 
 ## Current state
 
-- Frontend status: **NOT STARTED / PLANNING COMPLETE**
+- Frontend status: **PHASE 4A.1 COMPLETE / FOUNDATION INITIALIZED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
 - Frontend branch: `phase-4a-frontend-foundation`
-- Current milestone: Phase 4A.0 — Codex project initialization and frontend planning
-- `frontend/` state: directory exists and is empty; no source, package manifest, lockfile, framework, or build configuration exists
+- Current milestone: Phase 4A.1 — React foundation initialization
+- `frontend/` state: Vite React + TypeScript application initialized with a minimal routed shell and centralized Axios client
 
 ## Approved frontend stack and setup facts
 
 - Application: React single-page application
-- Routing: routing library required; the UI/UX specification uses React Router route conventions
-- API access: shared REST API service layer using the `/api/v1` contract; HTTP client package is **UNDECIDED**
+- Build tool: Vite
+- Language: TypeScript
+- Package manager: npm
+- Routing: React Router in declarative SPA mode
+- API access: Axios through a shared client using `VITE_API_BASE_URL` and the `/api/v1` contract
 - State: React built-in state and Context are sufficient; no external state-management library is approved or required
 - Component testing: React Testing Library; test runner remains open under DEC-011
-- Build tool: **UNDECIDED**
-- Language: JavaScript vs TypeScript **UNDECIDED**
 - CSS/UI library and visual theme: **UNDECIDED**
-- Package manager: **UNDECIDED**
+
+## Phase 4A.1 verification
+
+- Foundation files: `src/main.tsx`, `src/app/router.tsx`, `src/components/layout/AppLayout.tsx`, `src/pages/HomePage.tsx`, `src/pages/NotFoundPage.tsx`, `src/services/apiClient.ts`, and `src/styles/global.css`
+- Environment: `frontend/.env.example` provides `VITE_API_BASE_URL=http://localhost:8080/api/v1`; real `.env` files remain ignored
+- Dependency installation: succeeded with 0 reported vulnerabilities
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS (scaffolded Oxlint)
+- Tests: not configured; DEC-011 remains open
 
 ## Minimum frontend implementation map
 
@@ -96,7 +105,7 @@
 
 - DEC-011 frontend test runner: **OPEN** — do not choose Jest or Vitest yet.
 - DEC-012 E2E framework: **OPEN** — do not choose Cypress or Playwright yet.
-- Build tool, JavaScript vs TypeScript, HTTP-client package, CSS/UI library, visual theme, and package manager: **UNDECIDED**.
+- CSS/UI library and final visual theme: **UNDECIDED**; this foundation uses minimal global CSS only.
 - Payment-provider-specific UI remains deferred; implement only provider-agnostic initiation and status behavior until DEC-001 changes.
 - Server-side logout remains unavailable while DEC-002 is open; frontend logout clears client authentication state only.
 - Order cancellation remains unavailable while DEC-006 is open.
@@ -109,4 +118,4 @@
 
 ## Next recommended task
 
-Initialize the minimal React project foundation in `frontend/` only after explicitly resolving the build tool, language, package manager, and any immediately required routing/HTTP-client choices. Keep DEC-011 and DEC-012 open unless separately approved.
+Begin Phase 4A.2 — frontend architecture and an auth-ready shell. Keep DEC-011 and DEC-012 open unless separately approved.
