@@ -16,7 +16,7 @@ export function AppLayout() {
         <Link className="brand" to="/">Handmade Art</Link>
         <nav aria-label="Primary navigation">
           <ul className="nav-list">
-            <li><Link to="/">Home</Link></li>
+            <li><Link to="/">Catalogue</Link></li>
             {!isInitializing && !isAuthenticated && (
               <>
                 <li><Link to="/login">Sign in</Link></li>

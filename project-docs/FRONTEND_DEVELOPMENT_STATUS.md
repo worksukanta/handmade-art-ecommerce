@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4B COMPLETED / AUTHENTICATION UI INTEGRATED**
+- Frontend status: **PHASE 4C COMPLETED / PUBLIC CATALOGUE INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-4a-frontend-foundation`
-- Current milestone: Phase 4B — Authentication UI and backend integration
-- `frontend/` state: Vite React + TypeScript application with complete login/registration UI, auth-aware routing, session recovery, and role navigation
+- Frontend branch: `phase-4c-catalogue`
+- Current milestone: Phase 4C — Public catalogue and product details
+- `frontend/` state: Vite React + TypeScript application with authentication and public catalogue/product browsing against the backend API
 
 ## Approved frontend stack and setup facts
 
@@ -52,6 +52,19 @@
 - Production build: `npm run build` — PASS
 - Lint: `npm run lint` — PASS with no warnings
 - Decisions: DEC-002, DEC-011, and DEC-012 remain OPEN
+
+## Phase 4C verification
+
+- Routes: `/` provides catalogue search/filter/sort/pagination; `/products/:id` provides public product details
+- API integration: `GET /products`, `GET /categories`, and `GET /products/{id}` through a dedicated typed catalogue service
+- Presentation: reusable product cards, resilient product images, primary/order-aware gallery, availability/type messaging, and embedded related products
+- Images: frontend renders the backend-provided `imageUrl`; it does not construct paths from `storage_reference`
+- States: responsive loading skeletons, retryable errors, empty results, product-not-found handling, and broken-image fallback
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS with no warnings
+- Runtime integration: public `GET /products` and `GET /categories` returned 200; the current database contained no public catalogue records
+- Backend/API issues: none discovered
+- Decisions: DEC-011 and DEC-012 remain OPEN
 
 ## Minimum frontend implementation map
 
@@ -142,4 +155,4 @@
 
 ## Next recommended task
 
-Begin Phase 4C — Public Catalogue + Product Experience. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
+Begin Phase 4D — Cart + Profile/Addresses + Checkout Preparation. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
