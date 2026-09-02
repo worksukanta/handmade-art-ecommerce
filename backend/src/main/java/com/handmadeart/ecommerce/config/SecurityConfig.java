@@ -82,6 +82,8 @@ public class SecurityConfig {
                 // Public: catalogue browsing — categories and products (REST API Spec §6, §7)
                 .requestMatchers("/api/v1/categories", "/api/v1/categories/**").permitAll()
                 .requestMatchers("/api/v1/products", "/api/v1/products/**").permitAll()
+                // Public: content for images belonging to active catalogue products
+                .requestMatchers("/api/v1/product-images/**").permitAll()
                 // Admin-only: all /api/v1/admin/**  paths require the ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 // Customer account profile and addresses: REST API Spec §3

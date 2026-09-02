@@ -12,6 +12,7 @@ import com.handmadeart.ecommerce.service.CurrentUserService;
 import com.handmadeart.ecommerce.service.CustomArtworkRequestService;
 import com.handmadeart.ecommerce.service.OrderService;
 import com.handmadeart.ecommerce.service.PaymentService;
+import com.handmadeart.ecommerce.service.ProductImageContentService;
 import com.handmadeart.ecommerce.service.QuotationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -131,6 +133,9 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private com.handmadeart.ecommerce.service.AdminCustomerService adminCustomerService;
+
+    @MockitoBean
+    private ProductImageContentService productImageContentService;
 
     // -------------------------------------------------------------------------
     // Test configuration
@@ -340,6 +345,20 @@ class SecurityAuthorizationTest {
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isForbidden())
                 .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+    }
+
+    @Test
+    @DisplayName("IMG-SEC-01: product image content is publicly accessible")
+    void productImageContent_withoutAuthentication_returnsImage() throws Exception {
+        byte[] imageBytes = new byte[] {1, 2, 3};
+        when(productImageContentService.getPublicImage(7L))
+                .thenReturn(new ProductImageContentService.ProductImageContent(
+                        imageBytes, org.springframework.http.MediaType.IMAGE_PNG));
+
+        mockMvc.perform(get("/api/v1/product-images/7/content"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(org.springframework.http.MediaType.IMAGE_PNG))
+                .andExpect(content().bytes(imageBytes));
     }
 
     // -------------------------------------------------------------------------

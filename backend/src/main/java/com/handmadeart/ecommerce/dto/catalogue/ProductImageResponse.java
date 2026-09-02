@@ -21,6 +21,9 @@ public class ProductImageResponse {
     @JsonProperty("storage_reference")
     private String storageReference;
 
+    /** Public browser-usable content URL; callers never construct paths from storage_reference. */
+    private String imageUrl;
+
     @JsonProperty("original_filename")
     private String originalFilename;
 
@@ -43,6 +46,7 @@ public class ProductImageResponse {
         ProductImageResponse dto = new ProductImageResponse();
         dto.id = image.getId();
         dto.storageReference = image.getStorageReference();
+        dto.imageUrl = "/api/v1/product-images/" + image.getId() + "/content";
         dto.originalFilename = image.getOriginalFilename();
         dto.contentType = image.getContentType();
         dto.fileSizeBytes = image.getFileSizeBytes();
@@ -53,6 +57,7 @@ public class ProductImageResponse {
 
     public Long getId() { return id; }
     public String getStorageReference() { return storageReference; }
+    public String getImageUrl() { return imageUrl; }
     public String getOriginalFilename() { return originalFilename; }
     public String getContentType() { return contentType; }
     public Integer getFileSizeBytes() { return fileSizeBytes; }

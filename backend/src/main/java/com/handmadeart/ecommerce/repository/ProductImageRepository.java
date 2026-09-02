@@ -1,7 +1,10 @@
 package com.handmadeart.ecommerce.repository;
 
 import com.handmadeart.ecommerce.entity.ProductImage;
+import com.handmadeart.ecommerce.entity.ProductStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +31,17 @@ public interface ProductImageRepository extends JpaRepository<ProductImage, Long
      * Count images for a product — used to validate upload limits if applicable.
      */
     long countByProductId(Long productId);
+
+    /**
+     * Find a public catalogue image only when its owning product has the required status.
+     */
+    @Query("""
+            select image
+            from ProductImage image
+            join fetch image.product product
+            where image.id = :imageId and product.status = :status
+            """)
+    Optional<ProductImage> findPublicImage(
+            @Param("imageId") Long imageId,
+            @Param("status") ProductStatus status);
 }
