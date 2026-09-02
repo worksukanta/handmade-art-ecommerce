@@ -78,8 +78,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/products", "/api/v1/products/**").permitAll()
                 // Admin-only: all /api/v1/admin/**  paths require the ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                // Customer account profile and addresses: REST API Spec §3
+                .requestMatchers("/api/v1/account", "/api/v1/account/**").hasRole("CUSTOMER")
                 // Customer cart: REST API Spec §8 specifies CUSTOMER role for all cart endpoints
                 .requestMatchers("/api/v1/cart", "/api/v1/cart/**").hasRole("CUSTOMER")
+                // Customer checkout validate: REST API Spec §9 CUSTOMER role
+                .requestMatchers("/api/v1/checkout", "/api/v1/checkout/**").hasRole("CUSTOMER")
                 // Customer orders: REST API Spec §9/§10 CUSTOMER role for order creation and history
                 .requestMatchers("/api/v1/orders", "/api/v1/orders/**").hasRole("CUSTOMER")
                 // Customer custom artwork requests: REST API Spec §13 CUSTOMER role

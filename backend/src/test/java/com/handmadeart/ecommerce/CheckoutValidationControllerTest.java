@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.handmadeart.ecommerce.controller.CheckoutController;
 import com.handmadeart.ecommerce.dto.order.CheckoutValidationResponse;
 import com.handmadeart.ecommerce.dto.order.CreateOrderRequest;
-import com.handmadeart.ecommerce.dto.order.OrderItemResponse;
-import com.handmadeart.ecommerce.dto.order.OrderResponse;
 import com.handmadeart.ecommerce.entity.AppUser;
-import com.handmadeart.ecommerce.entity.OrderStatus;
 import com.handmadeart.ecommerce.entity.UserRole;
 import com.handmadeart.ecommerce.exception.EmptyCartException;
 import com.handmadeart.ecommerce.exception.InsufficientStockException;
@@ -47,31 +44,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * MockMvc controller tests for POST /api/v1/orders (checkout/order creation).
- *
- * Uses the real SecurityConfig + JwtAuthenticationFilter to verify
- * authentication and authorization rules. CheckoutService is mocked.
+ * MockMvc controller tests for POST /api/v1/checkout/validate.
  *
  * Covered:
- *   CHK-C-01  Unauthenticated POST /orders → 401
- *   CHK-C-02  CUSTOMER JWT + valid request → 201 + OrderResponse
- *   CHK-C-03  CUSTOMER JWT + missing addressId → 400
- *   CHK-C-04  CUSTOMER JWT + empty cart → 409 EMPTY_CART
- *   CHK-C-05  CUSTOMER JWT + foreign address → 404 NOT_FOUND
- *   CHK-C-06  CUSTOMER JWT + insufficient stock → 409 INSUFFICIENT_STOCK
- *   CHK-C-07  CUSTOMER JWT + non-purchasable product → 409 PRODUCT_NOT_PURCHASABLE
- *   CHK-C-08  ADMIN JWT → 403 (order endpoint is CUSTOMER-only)
+ *   CHK-V-01  Unauthenticated → 401
+ *   CHK-V-02  CUSTOMER valid cart/address → 200 + CheckoutValidationResponse (valid=true)
+ *   CHK-V-03  Missing addressId → 400
+ *   CHK-V-04  Empty cart → 409 EMPTY_CART
+ *   CHK-V-05  Foreign address → 404 NOT_FOUND
+ *   CHK-V-06  Insufficient stock → 409 INSUFFICIENT_STOCK
+ *   CHK-V-07  Non-purchasable product → 409 PRODUCT_NOT_PURCHASABLE
+ *   CHK-V-08  ADMIN JWT → 403 (CUSTOMER only)
  */
 @WebMvcTest(CheckoutController.class)
 @Import({
-        CheckoutControllerTest.TestSecurityConfig.class,
+        CheckoutValidationControllerTest.TestSecurityConfig.class,
         com.handmadeart.ecommerce.config.SecurityConfig.class,
         com.handmadeart.ecommerce.security.JwtAuthenticationFilter.class,
         com.handmadeart.ecommerce.security.AuthEntryPoint.class,
         com.handmadeart.ecommerce.security.ApiAccessDeniedHandler.class,
         com.handmadeart.ecommerce.exception.GlobalExceptionHandler.class
 })
-class CheckoutControllerTest {
+class CheckoutValidationControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
@@ -96,10 +90,6 @@ class CheckoutControllerTest {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Token / mock helpers
-    // -------------------------------------------------------------------------
-
     private String customerToken() {
         return "Bearer " + jwtService.generateToken("customer@example.com", "CUSTOMER");
     }
@@ -118,7 +108,7 @@ class CheckoutControllerTest {
                 .password("{noop}x").roles("ADMIN").build();
     }
 
-    private AppUser buildCustomerEntity() {
+    private AppUser buildCustomer() {
         AppUser user = new AppUser();
         user.setEmail("customer@example.com");
         user.setFullName("Test Customer");
@@ -126,29 +116,26 @@ class CheckoutControllerTest {
         return user;
     }
 
-    private OrderResponse buildOrderResponse() {
-        // Use a minimal valid OrderResponse
-        OrderResponse r = new OrderResponse();
+    private CheckoutValidationResponse buildValidResponse() {
+        CheckoutValidationResponse r = new CheckoutValidationResponse();
+        r.setValid(true);
+        r.setItems(List.of());
+        r.setSubtotalAmount(BigDecimal.valueOf(50));
+        r.setTotalAmount(BigDecimal.valueOf(50));
         return r;
     }
 
-    // Reflection-free minimal OrderResponse for JSON assertions
-    private OrderResponse buildFullOrderResponse() {
-        // Can't easily construct via reflection-free; service mock returns it.
-        return new OrderResponse();
-    }
-
     // -------------------------------------------------------------------------
-    // CHK-C-01: Unauthenticated → 401
+    // CHK-V-01: Unauthenticated → 401
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-01: Unauthenticated POST /orders returns 401")
-    void unauthenticated_postOrders_returns401() throws Exception {
+    @DisplayName("CHK-V-01: Unauthenticated POST /checkout/validate returns 401")
+    void unauthenticated_checkoutValidate_returns401() throws Exception {
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isUnauthorized())
@@ -156,41 +143,40 @@ class CheckoutControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-02: CUSTOMER JWT + valid request → 201
+    // CHK-V-02: CUSTOMER valid cart/address → 200 + valid=true
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-02: CUSTOMER POST /orders with valid request returns 201 + OrderResponse")
-    void customerToken_validRequest_returns201() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
-        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
-        when(checkoutService.createOrder(any(), any())).thenReturn(buildOrderResponse());
+    @DisplayName("CHK-V-02: CUSTOMER POST /checkout/validate valid request returns 200 + valid=true")
+    void customerToken_validRequest_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomer());
+        when(checkoutValidationService.validate(any(), any())).thenReturn(buildValidResponse());
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.subtotalAmount").value(50));
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-03: Missing addressId → 400
+    // CHK-V-03: Missing addressId → 400
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-03: POST /orders with missing addressId returns 400")
+    @DisplayName("CHK-V-03: POST /checkout/validate missing addressId returns 400")
     void customerToken_missingAddressId_returns400() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
 
-        // addressId not set
-        CreateOrderRequest req = new CreateOrderRequest();
+        CreateOrderRequest req = new CreateOrderRequest(); // no addressId
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -199,119 +185,110 @@ class CheckoutControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-04: Empty cart → 409 EMPTY_CART
+    // CHK-V-04: Empty cart → 409 EMPTY_CART
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-04: POST /orders with empty cart returns 409 EMPTY_CART")
+    @DisplayName("CHK-V-04: POST /checkout/validate empty cart returns 409 EMPTY_CART")
     void customerToken_emptyCart_returns409() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
-        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
-        when(checkoutService.createOrder(any(), any()))
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomer());
+        when(checkoutValidationService.validate(any(), any()))
                 .thenThrow(new EmptyCartException("Cart is empty"));
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error").value("EMPTY_CART"));
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-05: Foreign/missing address → 404
+    // CHK-V-05: Foreign address → 404 NOT_FOUND
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-05: POST /orders with foreign/missing address returns 404")
+    @DisplayName("CHK-V-05: POST /checkout/validate foreign address returns 404")
     void customerToken_foreignAddress_returns404() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
-        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
-        when(checkoutService.createOrder(any(), any()))
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomer());
+        when(checkoutValidationService.validate(any(), any()))
                 .thenThrow(new ResourceNotFoundException("Address not found"));
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(999L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"));
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-06: Insufficient stock → 409 INSUFFICIENT_STOCK
+    // CHK-V-06: Insufficient stock → 409 INSUFFICIENT_STOCK
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-06: POST /orders with insufficient stock returns 409 INSUFFICIENT_STOCK")
+    @DisplayName("CHK-V-06: POST /checkout/validate insufficient stock returns 409")
     void customerToken_insufficientStock_returns409() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
-        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
-        when(checkoutService.createOrder(any(), any()))
-                .thenThrow(new InsufficientStockException("Insufficient stock for 'Widget': requested 5, available 2"));
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomer());
+        when(checkoutValidationService.validate(any(), any()))
+                .thenThrow(new InsufficientStockException("Insufficient stock"));
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error").value("INSUFFICIENT_STOCK"));
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-07: Non-purchasable product → 409 PRODUCT_NOT_PURCHASABLE
+    // CHK-V-07: Non-purchasable product → 409 PRODUCT_NOT_PURCHASABLE
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-07: POST /orders with non-purchasable product returns 409 PRODUCT_NOT_PURCHASABLE")
+    @DisplayName("CHK-V-07: POST /checkout/validate non-purchasable product returns 409")
     void customerToken_nonPurchasableProduct_returns409() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(customerDetails());
-        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
-        when(checkoutService.createOrder(any(), any()))
-                .thenThrow(new ProductNotPurchasableException("Product is no longer available"));
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomer());
+        when(checkoutValidationService.validate(any(), any()))
+                .thenThrow(new ProductNotPurchasableException("Product not eligible"));
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error").value("PRODUCT_NOT_PURCHASABLE"));
     }
 
     // -------------------------------------------------------------------------
-    // CHK-C-08: ADMIN JWT → 403 (CUSTOMER-only)
+    // CHK-V-08: ADMIN JWT → 403
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("CHK-C-08: ADMIN JWT on POST /orders returns 403 (CUSTOMER role only)")
-    void adminToken_postOrders_returns403() throws Exception {
-        when(appUserDetailsService.loadUserByUsername(anyString()))
-                .thenReturn(adminDetails());
+    @DisplayName("CHK-V-08: ADMIN POST /checkout/validate returns 403")
+    void adminToken_checkoutValidate_returns403() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
 
         CreateOrderRequest req = new CreateOrderRequest();
         req.setAddressId(1L);
 
-        mockMvc.perform(post("/api/v1/orders")
+        mockMvc.perform(post("/api/v1/checkout/validate")
                         .header("Authorization", adminToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))

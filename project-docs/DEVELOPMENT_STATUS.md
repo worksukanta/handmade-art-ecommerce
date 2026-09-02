@@ -12,15 +12,15 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3F — Backend API Gap Audit — COMPLETED (3F.1)
-Phase 3F.2 — Implement Remaining Backend Gaps — NEXT
+Phase 3F.2A — Customer Account, Addresses & Checkout Validation — COMPLETED
+Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — NEXT
 
 ## Last Verified Milestone
 
-Phase 3F.1 — REST API Endpoint Catalogue Gap Audit — COMPLETED and VERIFIED.
+Phase 3F.2A — Customer Account Profile, Address CRUD, Checkout Validation — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 270, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 300, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented (immediate SUCCESS on initiation).
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
@@ -99,8 +99,8 @@ project-docs/
 * [x] Spring Boot Project Initialization
 * [x] Database Foundation (Phase 2A–2F complete — Database Foundation phase COMPLETE)
 * [x] Authentication and Authorization (Phase 3A COMPLETE)
-* [ ] Customer Profile
-* [ ] Address Management
+* [x] Customer Profile (Phase 3F.2A — GET/PUT /account/profile COMPLETE)
+* [x] Address Management (Phase 3F.2A — GET/POST/PUT/DELETE /account/addresses COMPLETE)
 * [x] Categories (Phase 3B.1: public read APIs COMPLETE; Phase 3B.2: admin CRUD COMPLETE)
 * [x] Products (Phase 3B.1: public read APIs COMPLETE; Phase 3B.2: admin CRUD COMPLETE)
 * [x] Product Images (Phase 3B.1: included in product detail response; Phase 3B.2: admin upload/remove COMPLETE)
@@ -727,7 +727,63 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3F.1 gap audit complete and verified.
+None. Phase 3F.2A complete and verified.
+
+## Phase 3F.2A — Customer Account, Addresses & Checkout Validation — COMPLETED
+
+Implemented 7 missing endpoints from Phase 3F.1 audit:
+- GET /api/v1/account/profile
+- PUT /api/v1/account/profile
+- GET /api/v1/account/addresses
+- POST /api/v1/account/addresses
+- PUT /api/v1/account/addresses/{id}
+- DELETE /api/v1/account/addresses/{id}
+- POST /api/v1/checkout/validate (NON-MUTATING pre-order advisory validation)
+
+SecurityConfig updated: /api/v1/account/** → CUSTOMER, /api/v1/checkout/** → CUSTOMER.
+
+Profile rules: only name and phone are customer-editable; email, role, password, id, timestamps protected.
+Address rules: ownership enforced via (userId, addressId) scoping; DEC-010 DEFERRED (isDefault persisted as supplied; no auto-promotion).
+Checkout validate: advisory only — no order, inventory, cart, or payment mutation.
+
+`mvn clean test`: Tests run: 300, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+### Files created
+
+- backend/src/main/java/com/handmadeart/ecommerce/dto/account/ProfileResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/account/UpdateProfileRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/account/AddressResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/account/AddressRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/CheckoutValidationResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AccountService.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/CheckoutValidationService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AccountController.java
+- backend/src/test/java/com/handmadeart/ecommerce/AccountControllerTest.java (14 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/AccountServiceTest.java (8 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/CheckoutValidationControllerTest.java (8 tests)
+
+### Files modified
+
+- backend/src/main/java/com/handmadeart/ecommerce/controller/CheckoutController.java (added POST /checkout/validate + CheckoutValidationService)
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java (added /account/** and /checkout/** CUSTOMER rules)
+- backend/src/test/java/com/handmadeart/ecommerce/CheckoutControllerTest.java (added CheckoutValidationService mock)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java (added AccountService + CheckoutValidationService mocks)
+
+### Remaining implementable endpoints (7)
+
+- GET /admin/orders
+- GET /admin/orders/{id}
+- PATCH /admin/orders/{id}/status
+- GET /admin/payments/{id}
+- GET /orders/{id}/shipment
+- GET /admin/customers
+- GET /admin/customers/{id}
+
+### Decision-blocked endpoints (unchanged)
+
+- POST /auth/logout — DEC-002 OPEN
+- POST /orders/{id}/cancel — DEC-006 OPEN
+- POST /payments/provider-callback — DEC-001 DEFERRED
 
 ## Phase 3F.1 — REST API Gap Audit — COMPLETED
 
@@ -786,16 +842,16 @@ Schema support: All above endpoints are fully supported by existing schema (AppU
 
 ## Next Recommended Task
 
-Phase 3F.2 — Implement Remaining Backend Gaps.
+Phase 3F.2B — Implement Admin Orders, Admin Payments, Admin Customers, Customer Order Shipment.
 
-Implement all 14 implementable missing endpoints in order of priority:
-1. Customer account profile (GET/PUT /account/profile)
-2. Customer address management (GET/POST/PUT/DELETE /account/addresses)
-3. Admin order management (GET/GET/{id}/PATCH-status /admin/orders)
-4. Customer order shipment view (GET /orders/{id}/shipment)
-5. Admin payment view (GET /admin/payments/{id})
-6. Admin customer management (GET/GET/{id} /admin/customers)
-7. Checkout pre-order validation (POST /checkout/validate)
+Remaining 7 implementable endpoints:
+1. GET /admin/orders — admin order list
+2. GET /admin/orders/{id} — admin order detail
+3. PATCH /admin/orders/{id}/status — admin order status transition
+4. GET /admin/payments/{id} — admin payment view
+5. GET /orders/{id}/shipment — customer ready-made order shipment view
+6. GET /admin/customers — admin customer list
+7. GET /admin/customers/{id} — admin customer detail
 
-Decision-blocked endpoints (DEC-001 logout, DEC-002, DEC-006) remain deferred until decisions are resolved.
+Decision-blocked endpoints (DEC-001, DEC-002, DEC-006) remain deferred until decisions are resolved.
 Run full db-integration test suite against live PostgreSQL to validate V5 migration.
