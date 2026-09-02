@@ -3,7 +3,11 @@ import { AppLayout } from '../components/layout/AppLayout'
 import { RequireAuth } from '../components/routing/RequireAuth'
 import { RequireRole } from '../components/routing/RequireRole'
 import { AdminAreaPage } from '../pages/AdminAreaPage'
-import { CustomerAreaPage } from '../pages/CustomerAreaPage'
+import { ProfilePage } from '../pages/ProfilePage'
+import { AddressesPage } from '../pages/AddressesPage'
+import { CartPage } from '../pages/CartPage'
+import { CheckoutPage } from '../pages/CheckoutPage'
+import { CheckoutSuccessPage } from '../pages/CheckoutSuccessPage'
 import { CataloguePage } from '../pages/CataloguePage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
@@ -27,7 +31,11 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole role="CUSTOMER" />,
             children: [
-              { path: 'account/profile', element: <CustomerAreaPage /> },
+              { path: 'cart', element: <CartPage /> },
+              { path: 'account/profile', element: <ProfilePage /> },
+              { path: 'account/addresses', element: <AddressesPage /> },
+              { path: 'checkout', element: <CheckoutPage /> },
+              { path: 'checkout/success/:orderId', element: <CheckoutSuccessPage /> },
             ],
           },
           {

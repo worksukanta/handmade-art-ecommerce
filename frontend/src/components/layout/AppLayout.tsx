@@ -1,9 +1,11 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useCart } from '../../hooks/useCart'
 
 export function AppLayout() {
   const { isAuthenticated, isInitializing, signOut, user } = useAuth()
   const navigate = useNavigate()
+  const { itemCount } = useCart()
 
   const handleSignOut = () => {
     signOut()
@@ -24,7 +26,11 @@ export function AppLayout() {
               </>
             )}
             {!isInitializing && user?.role === 'CUSTOMER' && (
-              <li><Link to="/account/profile">Customer area</Link></li>
+              <>
+                <li><Link to="/cart">Cart{itemCount > 0 ? ` (${itemCount})` : ''}</Link></li>
+                <li><Link to="/account/addresses">Addresses</Link></li>
+                <li><Link to="/account/profile">Profile</Link></li>
+              </>
             )}
             {!isInitializing && user?.role === 'ADMIN' && (
               <li><Link to="/admin/products">Admin area</Link></li>

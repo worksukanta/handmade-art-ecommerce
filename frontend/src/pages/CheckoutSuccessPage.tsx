@@ -1,0 +1,3 @@
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import type { Order } from '../types/commerce'
+export function CheckoutSuccessPage() { const state = useLocation().state as { order?: Order } | null; const order = state?.order; if (!order) return <Navigate to="/" replace />; return <section className="state-panel order-success"><p className="eyebrow">Order created</p><h1>Thank you for your order</h1><p>Order #{order.orderId} is <strong>{order.status}</strong>.</p><p>Total: <strong>${Number(order.totalAmount).toFixed(2)}</strong></p><p>Payment has not been processed. Payment options will be available in the next phase.</p><Link className="button button-primary state-link" to="/">Continue browsing</Link></section> }

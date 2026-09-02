@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { ProductCard } from '../components/catalogue/ProductCard'
 import { ProductImage } from '../components/catalogue/ProductImage'
 import { ErrorState } from '../components/feedback/ErrorState'
@@ -7,6 +7,8 @@ import { LoadingState } from '../components/feedback/LoadingState'
 import { catalogueService } from '../services/catalogueService'
 import type { ProductDetail, ProductImage as ProductImageType } from '../types/catalogue'
 import { normalizeApiError } from '../utils/apiError'
+import { useAuth } from '../hooks/useAuth'
+import { useCart } from '../hooks/useCart'
 
 function orderedImages(images: ProductImageType[]) {
   return [...images].sort((left, right) => {
@@ -23,6 +25,9 @@ function availabilityLabel(product: ProductDetail) {
 
 export function ProductDetailPage() {
   const { id } = useParams()
+  const location = useLocation()
+  const { isAuthenticated, user } = useAuth()
+  const { addItem } = useCart()
   const productId = Number(id)
   const hasInvalidProductId = !Number.isSafeInteger(productId) || productId <= 0
   const [product, setProduct] = useState<ProductDetail | null>(null)
@@ -30,6 +35,9 @@ export function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<{ status: number | null; message: string } | null>(null)
   const [requestVersion, setRequestVersion] = useState(0)
+  const [quantity, setQuantity] = useState(1)
+  const [cartMessage, setCartMessage] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -86,7 +94,11 @@ export function ProductDetailPage() {
           {product.description && <div className="product-description"><h2>About this artwork</h2><p>{product.description}</p></div>}
           <div className="purchase-note">
             <h2>Purchase options</h2>
-            <p>{product.product_type === 'READY_MADE' ? 'Cart purchasing will be available in the next storefront phase.' : product.product_type === 'CUSTOM_AVAILABLE' ? 'This work is available through the custom artwork request process.' : 'This piece is presented as part of the artist’s portfolio and is not available for standard purchase.'}</p>
+            {product.product_type === 'READY_MADE' && product.availability.in_stock && user?.role !== 'ADMIN' && <div className="add-cart-controls"><label htmlFor="product-quantity">Quantity</label><input id="product-quantity" type="number" min="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} />{isAuthenticated ? <button className="button button-primary" type="button" disabled={isAdding} onClick={() => { setIsAdding(true); setCartMessage(null); void addItem(product.id, quantity).then(() => setCartMessage('Added to your cart.')).catch((cause: unknown) => setCartMessage(normalizeApiError(cause).message)).finally(() => setIsAdding(false)) }}>{isAdding ? 'Adding…' : 'Add to cart'}</button> : <Link className="button button-primary" to="/login" state={{ from: location }}>Sign in to add to cart</Link>}</div>}
+            {cartMessage && <p className="form-alert" role="status">{cartMessage}</p>}
+            {product.product_type === 'READY_MADE' && !product.availability.in_stock && <p>This ready-made piece is currently unavailable.</p>}
+            {product.product_type === 'CUSTOM_AVAILABLE' && <p>This work is available through the custom artwork request process. Online custom requests are coming in a later phase.</p>}
+            {product.product_type === 'PORTFOLIO_ONLY' && <p>This piece is presented as part of the artist’s portfolio and is not available for standard purchase.</p>}
           </div>
         </section>
       </div>

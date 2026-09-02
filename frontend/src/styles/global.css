@@ -181,6 +181,53 @@ select:focus-visible,
 .related-products { margin-top: 4rem; padding-top: 2.5rem; border-top: 1px solid #ded4c9; }
 .related-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+.commerce-page { display: grid; gap: 1.5rem; }
+.narrow-page { max-width: 42rem; }
+.heading-actions { display: flex; align-items: end; justify-content: space-between; gap: 1rem; max-width: none; }
+.commerce-form { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid #ded4c9; border-radius: 1rem; background: #fff; }
+.commerce-form button[type="submit"] { justify-self: start; padding: 0.65rem 1rem; border: 0; border-radius: 999px; color: #fff; background: #713d2f; font: inherit; cursor: pointer; }
+.commerce-form button:disabled { cursor: wait; opacity: 0.6; }
+.cart-layout,
+.checkout-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(17rem, 0.8fr); gap: 2rem; align-items: start; }
+.cart-items { display: grid; gap: 0.75rem; }
+.cart-item { display: grid; grid-template-columns: minmax(0, 1fr) 7rem auto auto; align-items: center; gap: 1rem; padding: 1.25rem; border: 1px solid #ded4c9; border-radius: 0.75rem; background: #fff; }
+.cart-item h2 { margin: 0 0 0.3rem; font-family: Georgia, serif; font-size: 1.15rem; }
+.cart-item p { margin: 0; color: #675d55; }
+.cart-item label { display: grid; gap: 0.3rem; font-size: 0.8rem; font-weight: 700; }
+.cart-item input,
+.add-cart-controls input { width: 5rem; padding: 0.5rem; border: 1px solid #988b80; border-radius: 0.4rem; }
+.text-button { border: 0; padding: 0; color: #704334; background: transparent; text-decoration: underline; text-underline-offset: 0.2rem; cursor: pointer; }
+.text-button.danger { color: #8b1616; }
+.order-summary { position: sticky; top: 1rem; display: grid; gap: 1rem; padding: 1.5rem; border-radius: 1rem; color: #fff; background: #3d302a; }
+.order-summary h2,
+.order-summary p { margin: 0; }
+.order-summary > div,
+.summary-line,
+.summary-total { display: flex; justify-content: space-between; gap: 1rem; }
+.summary-total { padding-top: 1rem; border-top: 1px solid rgb(255 255 255 / 30%); }
+.checkout-link { display: block; text-align: center; text-decoration: none; }
+.order-summary .text-button { color: #fff; }
+.address-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.address-card,
+.editor-panel,
+.checkout-section { padding: 1.5rem; border: 1px solid #ded4c9; border-radius: 1rem; background: #fff; }
+.address-card h2,
+.editor-panel h2,
+.checkout-section h2 { margin-top: 0; font-family: Georgia, serif; }
+.address-card address { margin-top: 0.75rem; color: #5d554e; font-style: normal; line-height: 1.6; }
+.form-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+.address-form { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; border: 0; }
+.address-form .checkbox-field,
+.address-form .form-actions { grid-column: 1 / -1; }
+.checkbox-field { display: flex; gap: 0.5rem; align-items: center; }
+.checkout-section + .checkout-section { margin-top: 1rem; }
+.address-options { display: grid; gap: 0.75rem; }
+.address-option { display: flex; gap: 0.75rem; padding: 1rem; border: 1px solid #ded4c9; border-radius: 0.6rem; cursor: pointer; }
+.add-cart-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; }
+.add-cart-controls label { display: grid; gap: 0.25rem; font-weight: 700; }
+.add-cart-controls a { text-decoration: none; }
+.order-success h1 { font-family: Georgia, serif; }
+
 @keyframes shimmer { to { background-position-x: -300%; } }
 @keyframes pulse { to { opacity: 0.5; } }
 
@@ -240,6 +287,16 @@ select:focus-visible,
   .product-detail-layout { grid-template-columns: 1fr; }
   .product-information { position: static; }
   .pagination { flex-wrap: wrap; }
+  .heading-actions { align-items: start; flex-direction: column; }
+  .cart-layout,
+  .checkout-layout { grid-template-columns: 1fr; }
+  .cart-item { grid-template-columns: 1fr auto; }
+  .cart-item label { grid-column: 1; }
+  .order-summary { position: static; }
+  .address-grid,
+  .address-form { grid-template-columns: 1fr; }
+  .address-form .checkbox-field,
+  .address-form .form-actions { grid-column: auto; }
 }
 
 @media (min-width: 40.001rem) and (max-width: 64rem) {

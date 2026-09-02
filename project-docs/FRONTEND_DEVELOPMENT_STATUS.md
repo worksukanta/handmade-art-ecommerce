@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4C COMPLETED / PUBLIC CATALOGUE INTEGRATED**
+- Frontend status: **PHASE 4D COMPLETED / CUSTOMER COMMERCE INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-4c-catalogue`
-- Current milestone: Phase 4C — Public catalogue and product details
-- `frontend/` state: Vite React + TypeScript application with authentication and public catalogue/product browsing against the backend API
+- Frontend branch: `phase-4d-customer-commerce`
+- Current milestone: Phase 4D — Cart, profile, addresses, and checkout
+- `frontend/` state: Vite React + TypeScript application covering public browsing and authenticated customer commerce through order creation
 
 ## Approved frontend stack and setup facts
 
@@ -65,6 +65,18 @@
 - Runtime integration: public `GET /products` and `GET /categories` returned 200; the current database contained no public catalogue records
 - Backend/API issues: none discovered
 - Decisions: DEC-011 and DEC-012 remain OPEN
+
+## Phase 4D verification
+
+- Cart: authenticated cart route, server-authoritative item pricing/totals, quantity updates, removal, confirmed clear, customer navigation count, and product-detail Add to Cart for eligible READY_MADE products
+- Profile/addresses: typed account service, editable name/phone profile, read-only email, and owned address list/create/edit/delete with explicit default flag support
+- Checkout: explicit owned-address selection, non-mutating `POST /checkout/validate`, separate confirmed `POST /orders`, duplicate-submit prevention, cart reset, and minimal order-created result
+- Product eligibility: CUSTOM_AVAILABLE points to the future custom-request flow; PORTFOLIO_ONLY never exposes standard cart behavior
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS with no warnings
+- Backend/API defects: none discovered
+- DEC-010 remains DEFERRED; checkout never silently chooses an address
+- DEC-011 and DEC-012 remain OPEN
 
 ## Minimum frontend implementation map
 
@@ -155,4 +167,4 @@
 
 ## Next recommended task
 
-Begin Phase 4D — Cart + Profile/Addresses + Checkout Preparation. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
+Begin Phase 4E — Orders & Payments. Keep DEC-001, DEC-002, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
