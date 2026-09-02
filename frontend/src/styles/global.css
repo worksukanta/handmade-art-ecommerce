@@ -38,6 +38,26 @@ a { color: inherit; }
 
 .app-header,
 .app-footer { padding-block: 1rem; }
+.app-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .app-main { padding-block: 3rem; }
 .brand { font-weight: 700; text-decoration: none; }
 .app-footer { color: #5f5f5f; font-size: 0.875rem; }
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-list button {
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

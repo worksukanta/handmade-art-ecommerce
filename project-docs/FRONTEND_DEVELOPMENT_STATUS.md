@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4A.1 COMPLETE / FOUNDATION INITIALIZED**
+- Frontend status: **PHASE 4A.2 COMPLETE / AUTH-READY ARCHITECTURE ESTABLISHED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
 - Frontend branch: `phase-4a-frontend-foundation`
-- Current milestone: Phase 4A.1 — React foundation initialization
-- `frontend/` state: Vite React + TypeScript application initialized with a minimal routed shell and centralized Axios client
+- Current milestone: Phase 4A.2 — Auth-ready application shell and frontend architecture
+- `frontend/` state: Vite React + TypeScript application with an auth-aware routed shell, centralized Axios client, session context, and route guards
 
 ## Approved frontend stack and setup facts
 
@@ -28,6 +28,18 @@
 - Production build: `npm run build` — PASS
 - Lint: `npm run lint` — PASS (scaffolded Oxlint)
 - Tests: not configured; DEC-011 remains open
+
+## Phase 4A.2 verification
+
+- Auth contracts: exact register, login, login-user-summary, and current-user DTO types established for `POST /auth/register`, `POST /auth/login`, and `GET /auth/me`
+- Session: JWT stored under `handmade-art.access-token` through one `localStorage` abstraction; `/auth/me` restores authoritative user state at startup; invalid/expired tokens are cleared
+- API auth: the shared Axios request interceptor attaches the Bearer token; 401 responses clear local auth state without refresh or redirect-loop behavior
+- Routing: reusable authenticated and CUSTOMER/ADMIN role guards protect approved placeholder routes; guards remain UX controls and backend authorization remains authoritative
+- Shell: public, CUSTOMER, and ADMIN navigation states with local-only sign-out; no backend logout call
+- Error handling: backend `ApiError` responses normalize to safe status/message/details for future UI use
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS with no warnings
+- Decisions: DEC-002, DEC-011, and DEC-012 remain OPEN
 
 ## Minimum frontend implementation map
 
@@ -114,8 +126,8 @@
 
 - The UI/UX specification flags the lack of an Admin product-list endpoint, but the later backend/API baseline implements `GET /api/v1/admin/products`; the UI document's warning is stale relative to the accepted implementation.
 - The UI/UX specification mentions `PUT /admin/shipments/{id}`, while the accepted backend exposes shipment creation as `POST /api/v1/admin/shipments` and status updates as `PATCH /api/v1/admin/shipments/{id}/status`; frontend implementation must follow the frozen REST/backend contract.
-- Some development-status history still says frontend initialization is next/not started; this file records Phase 4A.0 planning as complete while scaffolding remains not started.
+- Historical development-status entries may still describe frontend initialization as pending; this file is the current frontend-specific status through Phase 4A.2.
 
 ## Next recommended task
 
-Begin Phase 4A.2 — frontend architecture and an auth-ready shell. Keep DEC-011 and DEC-012 open unless separately approved.
+Begin Phase 4B — Authentication UI for the approved login and registration flows. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
