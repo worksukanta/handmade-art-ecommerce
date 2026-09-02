@@ -29,6 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -306,6 +308,38 @@ class SecurityAuthorizationTest {
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer " + expiredToken))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("CORS-01: Vite development origin receives approved preflight headers")
+    void viteOrigin_preflight_returnsCorsHeaders() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/register")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Authorization, Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string("Access-Control-Allow-Methods",
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsString("GET"),
+                                org.hamcrest.Matchers.containsString("POST"),
+                                org.hamcrest.Matchers.containsString("PUT"),
+                                org.hamcrest.Matchers.containsString("PATCH"),
+                                org.hamcrest.Matchers.containsString("DELETE"))))
+                .andExpect(header().string("Access-Control-Allow-Headers",
+                        org.hamcrest.Matchers.allOf(
+                                org.hamcrest.Matchers.containsStringIgnoringCase("authorization"),
+                                org.hamcrest.Matchers.containsStringIgnoringCase("content-type"))));
+    }
+
+    @Test
+    @DisplayName("CORS-02: Unapproved origin is rejected")
+    void unapprovedOrigin_preflight_isRejected() throws Exception {
+        mockMvc.perform(options("/api/v1/auth/register")
+                        .header("Origin", "http://example.test")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     // -------------------------------------------------------------------------

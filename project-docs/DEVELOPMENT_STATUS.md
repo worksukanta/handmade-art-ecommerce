@@ -22,6 +22,8 @@ Final Backend Acceptance Review — PASSED.
 `mvn clean test` (default profile, no PostgreSQL required)
 Result: Tests run: 323, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
+Frontend integration fix: Spring Security CORS now permits `http://localhost:5173` for the approved API methods and `Authorization`/`Content-Type` headers, without credentials or wildcard origins. `mvn test`: 325 tests, 0 failures, 0 errors, 0 skipped — BUILD SUCCESS.
+
 Defect fixed: PaymentResponse.customOrderRequestId was missing — advance payment responses now include the customOrderRequestId. Regression test ADV-S-02b added.
 
 REST API catalogue: 53 IMPLEMENTED, 3 decision-blocked (POST /auth/logout DEC-002, POST /orders/{id}/cancel DEC-006, POST /payments/provider-callback DEC-001), 0 other gaps.
