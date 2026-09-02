@@ -12,12 +12,12 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3E — Custom Artwork Workflow — COMPLETED
-Phase 3 — Backend Functional Development — remaining admin/customer API gap review and backend final validation next
+Phase 3F — Backend API Gap Audit — COMPLETED (3F.1)
+Phase 3F.2 — Implement Remaining Backend Gaps — NEXT
 
 ## Last Verified Milestone
 
-Phase 3E.2 — Quotation Approval/Rejection, Advance Payment, Admin Production Workflow, Shipping — COMPLETED and VERIFIED.
+Phase 3F.1 — REST API Endpoint Catalogue Gap Audit — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
 Result: Tests run: 270, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
@@ -727,13 +727,75 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3E.2 complete and verified.
+None. Phase 3F.1 gap audit complete and verified.
+
+## Phase 3F.1 — REST API Gap Audit — COMPLETED
+
+Audited all 60 rows of the approved REST API Endpoint Catalogue (tbl[75], REST API Specification).
+
+`mvn clean test` (default profile): Tests run: 270, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+### Implemented (39/60)
+
+Auth: register, login, GET /auth/me.
+Catalogue: GET/POST/PUT/PATCH categories; GET products, product detail, related-products; POST/PUT/PATCH/DELETE admin product management; GET/PATCH admin inventory.
+Cart: GET cart, POST/PUT/DELETE cart items, DELETE clear.
+Orders (customer): POST checkout, GET list, GET detail, POST/GET payments.
+Custom Artwork (full Phase 3E): POST/GET/GET-detail custom-requests, POST images, GET/POST quotation, POST approve/reject, POST/GET advance payment, GET custom shipment. Admin: GET queue, PATCH review, POST quotation, GET quotation, PATCH status, POST/PATCH/GET shipments.
+
+### MISSING — Implementable (no blocking decision)
+
+| Endpoint | Purpose |
+|----------|---------|
+| GET /account/profile | Customer profile read |
+| PUT /account/profile | Customer profile update |
+| GET /account/addresses | Address list |
+| POST /account/addresses | Address create |
+| PUT /account/addresses/{id} | Address update |
+| DELETE /account/addresses/{id} | Address remove |
+| POST /checkout/validate | Pre-order validation |
+| GET /admin/orders | Admin order processing list |
+| GET /admin/orders/{id} | Admin order detail |
+| PATCH /admin/orders/{id}/status | Admin order status transition |
+| GET /admin/payments/{id} | Admin payment view |
+| GET /orders/{id}/shipment | Customer order (ready-made) shipment view |
+| GET /admin/customers | Admin customer list |
+| GET /admin/customers/{id} | Admin customer detail |
+
+Schema support: All above endpoints are fully supported by existing schema (AppUser, Address, CustomerOrder, Payment, Shipment entities and repositories). No migration required.
+
+### MISSING — Blocked by OPEN decision
+
+| Endpoint | Decision |
+|----------|---------|
+| POST /auth/logout | DEC-002 (JWT revocation strategy) — OPEN |
+| POST /orders/{id}/cancel | DEC-006 (cancellation eligibility) — OPEN |
+
+### MISSING — Blocked by DEFERRED decision
+
+| Endpoint | Decision |
+|----------|---------|
+| POST /payments/provider-callback | DEC-001 (payment provider selection) — DEFERRED |
+
+### Summary
+
+- Total endpoints: 60
+- Implemented: 39
+- Missing (implementable now): 14
+- Missing (decision-blocked): 3 (DEC-001, DEC-002, DEC-006)
 
 ## Next Recommended Task
 
-Phase 3F — Remaining Admin/Customer API Gap Review and Backend Final Validation.
+Phase 3F.2 — Implement Remaining Backend Gaps.
 
-Review approved REST API spec for any unimplemented endpoints across all modules (admin customer management,
-customer profile, address management, order admin endpoints). Implement or document any approved gaps.
+Implement all 14 implementable missing endpoints in order of priority:
+1. Customer account profile (GET/PUT /account/profile)
+2. Customer address management (GET/POST/PUT/DELETE /account/addresses)
+3. Admin order management (GET/GET/{id}/PATCH-status /admin/orders)
+4. Customer order shipment view (GET /orders/{id}/shipment)
+5. Admin payment view (GET /admin/payments/{id})
+6. Admin customer management (GET/GET/{id} /admin/customers)
+7. Checkout pre-order validation (POST /checkout/validate)
+
+Decision-blocked endpoints (DEC-001 logout, DEC-002, DEC-006) remain deferred until decisions are resolved.
 Run full db-integration test suite against live PostgreSQL to validate V5 migration.
-Prepare for Phase 4 (Frontend React initialization).
