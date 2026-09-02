@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -107,6 +109,15 @@ class CatalogueInventoryPersistenceIntegrationTest {
     // =========================================================================
     // Category tests
     // =========================================================================
+
+    @Test
+    @Transactional
+    void catalogueSearch_omittedSearchText_executesWithPostgreSql() {
+        Page<Product> result = productRepository.searchCatalogue(
+                ProductStatus.ACTIVE, "", null, null, null, PageRequest.of(0, 20));
+
+        assertThat(result).isNotNull();
+    }
 
     @Test
     @Transactional

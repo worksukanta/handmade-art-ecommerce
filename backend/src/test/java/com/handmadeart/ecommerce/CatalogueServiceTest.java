@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
@@ -227,19 +228,21 @@ class CatalogueServiceTest {
     @Test
     @DisplayName("CSVC-10: listProducts always passes ACTIVE status to the repository")
     void listProducts_alwaysFiltersActiveProducts() {
-        Page<Product> emptyPage = new PageImpl<>(Collections.emptyList());
+        Page<Product> emptyPage = Page.empty(PageRequest.of(0, 20));
         when(productRepository.searchCatalogue(
-                eq(ProductStatus.ACTIVE), any(), any(), any(), any(), any(Pageable.class)))
+                eq(ProductStatus.ACTIVE), eq(""), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(emptyPage);
 
         PageResponse<ProductSummaryResponse> result =
                 catalogueService.listProducts(null, null, null, null, null, null, 0, 20);
 
         assertThat(result.getContent()).isEmpty();
+        assertThat(result.getPage()).isZero();
         assertThat(result.getTotalElements()).isZero();
+        assertThat(result.getTotalPages()).isZero();
         // Verify that ACTIVE status was passed to repository
         verify(productRepository).searchCatalogue(
-                eq(ProductStatus.ACTIVE), any(), any(), any(), any(), any(Pageable.class));
+                eq(ProductStatus.ACTIVE), eq(""), any(), any(), any(), any(Pageable.class));
     }
 
     // -------------------------------------------------------------------------

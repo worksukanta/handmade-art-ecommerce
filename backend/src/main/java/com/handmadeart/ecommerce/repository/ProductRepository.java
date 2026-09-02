@@ -68,7 +68,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             SELECT p FROM Product p
             JOIN FETCH p.category
             WHERE p.status = :status
-              AND (:q IS NULL
+              AND (:q = ''
                    OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
                    OR LOWER(p.description) LIKE LOWER(CONCAT('%', :q, '%')))
               AND (:categoryId IS NULL OR p.category.id = :categoryId)

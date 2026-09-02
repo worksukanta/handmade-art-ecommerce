@@ -154,8 +154,9 @@ public class CatalogueService {
         Sort sortSpec = buildSort(sort, direction);
         Pageable pageable = PageRequest.of(page, size, sortSpec);
 
-        // Normalize empty string to null so JPQL optional-filter logic works correctly
-        String searchQ = (q != null && !q.isBlank()) ? q.strip() : null;
+        // Use a typed empty string for an omitted search. PostgreSQL cannot infer the
+        // type of a null parameter used first in the JPQL `:q IS NULL` predicate.
+        String searchQ = (q != null && !q.isBlank()) ? q.strip() : "";
 
         Page<Product> productPage = productRepository.searchCatalogue(
                 ProductStatus.ACTIVE,
