@@ -446,6 +446,39 @@ class CustomArtworkPhase2ServiceTest {
     }
 
     // =========================================================================
+    // ADV-S-02b: initiateAdvancePayment — PaymentResponse includes customOrderRequestId
+    // =========================================================================
+
+    @Test
+    @DisplayName("ADV-S-02b: initiateAdvancePayment response includes customOrderRequestId (not null)")
+    void initiateAdvancePayment_responseIncludesCustomOrderRequestId() {
+        AppUser customer = buildCustomer(1L);
+        CustomOrderRequest req = buildRequest(10L, customer, CustomOrderRequestStatus.APPROVED);
+        Quotation q = buildQuotation(100L, req, QuotationStatus.APPROVED,
+                OffsetDateTime.now().plusDays(7), new BigDecimal("150.00"));
+
+        PaymentInitiationRequest payReq = new PaymentInitiationRequest();
+        payReq.setPaymentMethod("CARD");
+
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
+        when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(q));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
+            Payment p = inv.getArgument(0);
+            setId(p, Payment.class, 200L);
+            return p;
+        });
+        when(requestRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentResponse response = advancePaymentService.initiateAdvancePayment(customer, 10L, payReq);
+
+        // customOrderRequestId must be populated (fix: PaymentResponse now maps customOrderRequest)
+        assertThat(response.getCustomOrderRequestId()).isEqualTo(10L);
+        // orderId must be null for advance payments (no standard order involved)
+        assertThat(response.getOrderId()).isNull();
+    }
+
+    // =========================================================================
     // ADV-S-04: initiateAdvancePayment — request not APPROVED → 409
     // =========================================================================
 

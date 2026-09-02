@@ -12,30 +12,36 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — COMPLETED
-Backend Implementation — COMPLETE (except decision-blocked/deferred endpoints)
+Final Backend Acceptance — PASSED
+Backend MVP Implementation — COMPLETE (except decision-blocked endpoints)
 
 ## Last Verified Milestone
 
-Phase 3F.2B — Admin Orders, Admin Payments, Admin Customers, Customer Order Shipment — COMPLETED and VERIFIED.
+Final Backend Acceptance Review — PASSED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 322, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 323, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+Defect fixed: PaymentResponse.customOrderRequestId was missing — advance payment responses now include the customOrderRequestId. Regression test ADV-S-02b added.
+
+REST API catalogue: 53 IMPLEMENTED, 3 decision-blocked (POST /auth/logout DEC-002, POST /orders/{id}/cancel DEC-006, POST /payments/provider-callback DEC-001), 0 other gaps.
 
 DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented (immediate SUCCESS on initiation).
-DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
-DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
+DEC-002 (JWT logout/revocation): OPEN — logout not implemented.
+DEC-003 (file upload type/size limits): OPEN — image/* content-type validation only; size limits pending DEC-003 resolution.
 DEC-004 (requotation): DEFERRED — one quotation per request enforced; re-quotation not implemented.
 DEC-005 (advance payment rule): APPROVED and IMPLEMENTED — authoritative amount = stored Quotation.advanceAmount; no client-supplied amount accepted.
-DEC-006 (order cancellation): OPEN — POST /orders/{id}/cancel not implemented, blocked by DEC-006.
-DEC-007 (tax/delivery charge) remains DEFERRED. Order totals = item subtotals only (totalAmount = subtotalAmount).
-DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED — status/tracking-based; no carrier API integration.
-DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking.
-DEC-010 (default address) remains DEFERRED. Explicit owned addressId required; no silent fallback.
+DEC-006 (order cancellation): OPEN — POST /orders/{id}/cancel not implemented; CANCELLED transition returns 409.
+DEC-007 (tax/delivery charge): DEFERRED — order totals = item subtotals only (totalAmount = subtotalAmount).
+DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED — status/tracking-based; no carrier API.
+DEC-009 (inventory concurrency): APPROVED and IMPLEMENTED — checkout-time pessimistic locking.
+DEC-010 (default address): DEFERRED — explicit owned addressId required; no silent fallback.
 
-Final backend endpoint catalogue: 53 IMPLEMENTED, 3 decision-blocked (POST /auth/logout DEC-002, POST /orders/{id}/cancel DEC-006, POST /payments/provider-callback DEC-001), 0 other gaps.
+PostgreSQL regression: NOT run in this session. Developer should run the full db-integration suite against a live PostgreSQL instance (V5 not yet verified against live DB).
 
-PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite (V5 not yet verified against live DB).
+## Next Milestone
+
+Frontend implementation (Phase 4 — React project initialization).
 
 ## Overall Status
 
@@ -729,7 +735,105 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3F.2B complete and verified.
+None. Final Backend Acceptance review complete and verified.
+
+## Final Backend Acceptance Review — PASSED
+
+**Acceptance result: PASS WITH FIX**
+
+### REST API Catalogue (§1 — API Acceptance)
+
+Total: 60 approved endpoints.
+Implemented: 53.
+Decision-blocked (intentional): 3.
+Other gaps: 0.
+
+| # | Endpoint | Status |
+|---|----------|--------|
+| — | POST /api/v1/auth/logout | BLOCKED — DEC-002 OPEN |
+| — | POST /api/v1/orders/{id}/cancel | BLOCKED — DEC-006 OPEN |
+| — | POST /api/v1/payments/provider-callback | BLOCKED — DEC-001 DEFERRED |
+| All others | (53 endpoints) | IMPLEMENTED |
+
+### Standard E-Commerce Workflow (§2)
+
+Authentication → Catalogue → Cart → Address → Checkout Validation (non-mutating) → Checkout (pessimistic lock, transactional) → Inventory decrement → Order → Payment → Order history/detail → Order shipment tracking — all workflow stages VERIFIED.
+
+### Custom Artwork Workflow (§2)
+
+Request → Reference Images → Admin Review → Quotation → Customer Approval/Rejection → Advance Payment → Production → Shipment → Delivery — all workflow stages VERIFIED. Only approved state transitions are enforced in the service layer.
+
+### Security (§3)
+
+- Public endpoints (register, login, catalogue browse): VERIFIED public.
+- CUSTOMER endpoints: authentication required. JWT principal is authoritative. Client-supplied IDs never establish ownership.
+- ADMIN endpoints (/api/v1/admin/**): ADMIN role required via SecurityConfig.
+- CUSTOMER → ADMIN endpoints: 403. VERIFIED.
+- Cross-customer resource access: 404 non-disclosure. VERIFIED.
+- Passwords/hashes: never in responses. VERIFIED.
+- Sensitive payment credentials: never stored or returned. VERIFIED.
+
+### Checkout / Inventory (§4)
+
+- Cart stock checks: advisory only (no reservation, no lock). VERIFIED.
+- Checkout: authoritative validation + DEC-009 pessimistic `SELECT … FOR UPDATE`. VERIFIED.
+- Transactional boundary: order + order items + inventory decrement + cart clear in single transaction. VERIFIED.
+- Failed checkout: full rollback, no partial state. VERIFIED.
+- Checkout validation: non-mutating. VERIFIED.
+- Prices: server-authoritative from `product.price` at checkout time. VERIFIED.
+- OrderItem snapshot: purchase-time price preserved. VERIFIED.
+
+### Payment (§5)
+
+- Standard payment: amount from `order.totalAmount`. VERIFIED.
+- Advance payment: amount from `quotation.advanceAmount` (DEC-005). VERIFIED.
+- Client cannot supply authoritative amount. VERIFIED.
+- Duplicate/invalid payments: rejected with 409. VERIFIED.
+- DEC-001: provider integration deferred; sandbox mock flow. VERIFIED.
+- No card credentials stored. VERIFIED.
+
+### Database / Schema (§6)
+
+- V1–V5 migrations: all tables, FKs, unique/check constraints present. VERIFIED.
+- Flyway is sole schema authority (ddl-auto = none). VERIFIED.
+- All required relationships correct. VERIFIED.
+- No runtime schema generation relied on. VERIFIED.
+- V5 not yet run against live PostgreSQL — developer must run db-integration suite locally.
+
+### Code Quality (§7)
+
+- Controller → Service → Repository separation maintained throughout. VERIFIED.
+- Transactional boundaries appropriate (mutating operations, advance payment, checkout). VERIFIED.
+- BigDecimal used for all monetary values. VERIFIED.
+- DTO boundaries enforced — no entity exposure through APIs. VERIFIED.
+- Domain exceptions are narrow and named. VERIFIED.
+- No debug endpoints, secrets in code, or stack-trace leakage. VERIFIED.
+
+### Defects Found and Fixed (§9)
+
+**DEFECT: `PaymentResponse` missing `customOrderRequestId`**
+
+The `PaymentResponse` DTO mapped `orderId` but not `customOrderRequestId`. For custom artwork advance payments, this left the `orderId=null` with no way to correlate the payment back to the custom request. Fixed by adding `customOrderRequestId` field and getter to `PaymentResponse.from()`. Regression test ADV-S-02b added to `CustomArtworkPhase2ServiceTest`.
+
+Files changed:
+- `backend/src/main/java/com/handmadeart/ecommerce/dto/order/PaymentResponse.java` (added `customOrderRequestId`)
+- `backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkPhase2ServiceTest.java` (added ADV-S-02b)
+
+### Unresolved Decisions (§9)
+
+| Decision | Status | Impact |
+|---|---|---|
+| DEC-002 | OPEN | POST /auth/logout not implemented |
+| DEC-003 | OPEN | Upload size limits not enforced; content-type validation present |
+| DEC-006 | OPEN | POST /orders/{id}/cancel not implemented; CANCELLED returns 409 |
+| DEC-007 | DEFERRED | No tax/delivery; totalAmount = subtotalAmount |
+| DEC-010 | DEFERRED | No default address auto-selection; explicit addressId required |
+| DEC-011 | OPEN | Blocks frontend testing |
+| DEC-012 | OPEN | Blocks E2E testing |
+
+### Final Test Result
+
+`mvn clean test`: Tests run: 323, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 ## Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — COMPLETED
 

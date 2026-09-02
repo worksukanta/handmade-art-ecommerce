@@ -27,6 +27,7 @@ public class PaymentResponse {
 
     private Long paymentId;
     private Long orderId;
+    private Long customOrderRequestId;
     private PaymentPurpose paymentPurpose;
     private BigDecimal amount;
     private String paymentMethod;
@@ -48,6 +49,8 @@ public class PaymentResponse {
         PaymentResponse dto = new PaymentResponse();
         dto.paymentId = payment.getId();
         dto.orderId = payment.getOrder() != null ? payment.getOrder().getId() : null;
+        dto.customOrderRequestId = payment.getCustomOrderRequest() != null
+                ? payment.getCustomOrderRequest().getId() : null;
         dto.paymentPurpose = payment.getPaymentPurpose();
         dto.amount = payment.getAmount();
         dto.paymentMethod = payment.getPaymentMethod();
@@ -65,6 +68,7 @@ public class PaymentResponse {
 
     public Long getPaymentId() { return paymentId; }
     public Long getOrderId() { return orderId; }
+    public Long getCustomOrderRequestId() { return customOrderRequestId; }
     public PaymentPurpose getPaymentPurpose() { return paymentPurpose; }
     public BigDecimal getAmount() { return amount; }
     public String getPaymentMethod() { return paymentMethod; }
