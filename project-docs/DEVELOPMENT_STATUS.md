@@ -6,6 +6,20 @@ Handmade & Custom Artwork E-Commerce Platform
 
 IBM Technical Training Capstone Project
 
+## Local development sample data
+
+Sample data is disabled by default and is not managed by Flyway. To create or verify the idempotent local ADMIN/catalogue dataset from Windows CMD, provide a non-production password explicitly:
+
+```cmd
+cd backend
+set APP_SEED_ENABLED=true
+set APP_SEED_ADMIN_EMAIL=admin@example.com
+set APP_SEED_ADMIN_PASSWORD=<developer-provided-password>
+mvn spring-boot:run
+```
+
+The enabled seeder creates the configured ADMIN only when its email is absent, hashes its password with the application `PasswordEncoder`, and creates stable sample categories, products, inventory, related products, and small generated PNGs. Re-running does not duplicate those records. Leave `APP_SEED_ENABLED` absent or set it to `false` for normal startup. The enabled application fails fast when either ADMIN credential variable is blank.
+
 ## Current Phase
 
 Phase 3 — Backend Functional Development

@@ -49,6 +49,10 @@ app:
   upload:
     product-images: ${UPLOAD_PRODUCT_IMAGES_DIR:uploads/product-images}
     reference-images: ${UPLOAD_REFERENCE_IMAGES_DIR:uploads/reference-images}
+  seed:
+    enabled: ${APP_SEED_ENABLED:false}
+    admin-email: ${APP_SEED_ADMIN_EMAIL:}
+    admin-password: ${APP_SEED_ADMIN_PASSWORD:}
 
 logging:
   level:
