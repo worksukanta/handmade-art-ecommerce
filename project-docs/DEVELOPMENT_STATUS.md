@@ -12,25 +12,28 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED
-Phase 3E — Custom Artwork Workflow — IN PROGRESS (Phase 3E.2 next)
+Phase 3E — Custom Artwork Workflow — COMPLETED
+Phase 3 — Backend Functional Development — remaining admin/customer API gap review and backend final validation next
 
 ## Last Verified Milestone
 
-Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED and VERIFIED.
+Phase 3E.2 — Quotation Approval/Rejection, Advance Payment, Admin Production Workflow, Shipping — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 225, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 270, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented (immediate SUCCESS on initiation).
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
+DEC-004 (requotation): DEFERRED — one quotation per request enforced; re-quotation not implemented.
+DEC-005 (advance payment rule): APPROVED and IMPLEMENTED — authoritative amount = stored Quotation.advanceAmount; no client-supplied amount accepted.
+DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED — status/tracking-based; no carrier API integration.
 DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking.
 DEC-007 (tax/delivery charge) remains DEFERRED. Order totals = item subtotals only (totalAmount = subtotalAmount).
 DEC-010 (default address) remains DEFERRED. Explicit owned addressId required; no silent fallback.
-DEC-006 (order cancellation): OPEN — not in scope for Phase 3D.
+DEC-006 (order cancellation): OPEN — not in scope for Phase 3E.
 
-PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite as the Phase 3D regression checkpoint.
+PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite (V5 not yet verified against live DB).
 
 ## Overall Status
 
@@ -56,7 +59,9 @@ Phase 3B.2 — Admin Catalogue Management APIs COMPLETED: POST/PUT/PATCH categor
 
 Phase 3B.3 — Catalogue Integration Validation COMPLETED: defects fixed (broad IllegalStateException → 409 replaced with narrow InventoryTypeConflictException; double countByProductId() call in addProductImage() consolidated to single call); 3 high-value service tests added (PROD-08: READY_MADE→PORTFOLIO_ONLY removes inventory row; PROD-09: PORTFOLIO_ONLY→READY_MADE creates inventory row; IMG-01: removeProductImage with cross-product imageId → 404). All 97 tests pass (default profile, no PostgreSQL required). DEC-002 remains OPEN. Next phase: Phase 3C Cart APIs.
 
-Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation COMPLETED: customer create/list/get custom requests, reference image upload, admin list/review requests, admin create quotation, customer get quotation. Custom artwork DTOs, service, controller, admin controller. InvalidWorkflowTransitionException + DuplicateQuotationException added. GlobalExceptionHandler extended. SecurityConfig updated (/api/v1/custom-requests/** → CUSTOMER). All 225 tests pass (default profile, no PostgreSQL required). DEC-003 (file upload size) OPEN. DEC-004 (requotation) DEFERRED. DEC-005 (advance payment rule) OPEN — Phase 3E.2 not started.
+Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation COMPLETED: customer create/list/get custom requests, reference image upload, admin list/review requests, admin create quotation, customer get quotation. Custom artwork DTOs, service, controller, admin controller. InvalidWorkflowTransitionException + DuplicateQuotationException added. GlobalExceptionHandler extended. SecurityConfig updated (/api/v1/custom-requests/** → CUSTOMER). All 225 tests pass.
+
+Phase 3E.2 — Quotation Decision + Advance Payment + Admin Production Workflow + Shipping COMPLETED: customer approve/reject quotation (POST /quotations/{id}/approve|reject), advance payment (POST /custom-requests/{id}/payments, DEC-005), customer payment history (GET /custom-requests/{id}/payments), customer shipment view (GET /custom-requests/{id}/shipment), admin production status update (PATCH /admin/custom-requests/{id}/status), admin shipment management (POST/PATCH/GET /admin/shipments). CustomAdvancePaymentService, AdminProductionService created. ShipmentResponse, ShipmentCreateRequest, ShipmentStatusUpdateRequest DTOs created. SecurityConfig updated (/api/v1/quotations/** → CUSTOMER). All 270 tests pass (default profile, no PostgreSQL required). DEC-003 OPEN. DEC-004 DEFERRED. DEC-005 APPROVED and IMPLEMENTED. DEC-008 APPROVED and IMPLEMENTED.
 
 Frontend not started.
 
@@ -109,11 +114,11 @@ project-docs/
 * [x] Reference Image Upload (Phase 3E.1: multipart to filesystem, metadata to DB — COMPLETE)
 * [x] Admin Review (Phase 3E.1: ACCEPT/REJECT with workflow transitions — COMPLETE)
 * [x] Quotations (Phase 3E.1: admin create, customer read — COMPLETE)
-* [ ] Quotation Approval/Rejection
-* [ ] Advance Payment
-* [ ] Production Workflow
-* [ ] Shipping/Delivery
-* [ ] Admin APIs
+* [x] Quotation Approval/Rejection (Phase 3E.2 — COMPLETE)
+* [x] Advance Payment (Phase 3E.2 — COMPLETE, DEC-005)
+* [x] Production Workflow (Phase 3E.2 — COMPLETE)
+* [x] Shipping/Delivery (Phase 3E.2 — COMPLETE, DEC-008)
+* [ ] Admin APIs (gap review pending)
 * [ ] Backend Integration and Regression
 * [ ] React Project Initialization
 * [ ] Authentication UI
@@ -313,6 +318,19 @@ Admin (ADMIN role required):
 - POST  /api/v1/admin/custom-requests/{id}/quotation — 201 + QuotationResponse; requires UNDER_REVIEW; 409 duplicate/invalid
 - GET   /api/v1/admin/quotations/{id}                — 200 + QuotationResponse
 
+Implemented (Phase 3E.2 — quotation decision, advance payment, production, shipping):
+Customer (CUSTOMER role required):
+- POST /api/v1/quotations/{id}/approve          — 200 + QuotationResponse; PENDING→APPROVED; request QUOTED→APPROVED; expiry enforced; 404 foreign; 409 invalid state
+- POST /api/v1/quotations/{id}/reject           — 200 + QuotationResponse; PENDING→REJECTED; request QUOTED→REJECTED; 404 foreign; 409 invalid state
+- POST /api/v1/custom-requests/{id}/payments    — 201 + PaymentResponse; advance amount from Quotation.advanceAmount (DEC-005); APPROVED→IN_PRODUCTION (sandbox); 409 duplicate/wrong state
+- GET  /api/v1/custom-requests/{id}/payments    — 200 + PaymentResponse[]; ownership enforced
+- GET  /api/v1/custom-requests/{id}/shipment    — 200 + ShipmentResponse; ownership enforced; 404 no shipment
+Admin (ADMIN role required):
+- PATCH /api/v1/admin/custom-requests/{id}/status  — 200 + CustomArtworkRequestResponse; approved admin transitions only (IN_PRODUCTION→COMPLETED→SHIPPED→DELIVERED); 409 invalid
+- POST  /api/v1/admin/shipments                    — 201 + ShipmentResponse; creates PENDING shipment for custom request or order; DEC-008
+- PATCH /api/v1/admin/shipments/{id}/status        — 200 + ShipmentResponse; PENDING→SHIPPED→DELIVERED; sets shippedAt/deliveredAt; advances custom request status
+- GET   /api/v1/admin/shipments/{id}               — 200 + ShipmentResponse
+
 ## Testing Status
 
 Test strategy approved.
@@ -337,14 +355,16 @@ Tests implemented: 21 classes
 - PaymentServiceTest (default profile — Phase 3D.2: 9 tests: PAY-S-01..09)
 - CustomArtworkControllerTest (default profile — Phase 3E.1: 15 tests: CAR-C-01..15)
 - CustomArtworkServiceTest (default profile — Phase 3E.1: 20 tests: CAR-S-01..10, QUO-S-01..10)
+- CustomArtworkPhase2ServiceTest (default profile — Phase 3E.2: 27 tests: QUO-S-11..18, ADV-S-01..11, PROD-S-01..08)
+- CustomArtworkPhase2ControllerTest (default profile — Phase 3E.2: 18 tests: CAR2-C-01..18)
 - DatabaseInfrastructureIntegrationTest (db-integration — Phase 2A: 4 tests)
 - IdentityPersistenceIntegrationTest (db-integration — Phase 2B: 13 tests)
 - CatalogueInventoryPersistenceIntegrationTest (db-integration — Phase 2C: 19 tests)
 - CommercePersistenceIntegrationTest (db-integration — Phase 2D: 17 tests)
 
-Tests executed (default profile): 225 (Phase 3E.1 verification run)
+Tests executed (default profile): 270 (Phase 3E.2 verification run)
 
-Tests passed (default profile): 225
+Tests passed (default profile): 270
 
 Tests failed (default profile): 0
 
@@ -354,18 +374,19 @@ Database integration tests (Phase 2A–2D): EXECUTED and PASSED.
 
 ## Current Known Issues
 
-No blocking issues for Phase 3E.1.
+No blocking issues for Phase 3E.
 
 DEC-001 (payment provider): DEFERRED — sandbox mock flow (immediate SUCCESS). Real provider integration requires DEC-001 resolution.
 DEC-003 (file upload type/size limits): OPEN — reference image upload implemented with content-type validation (image/* only). Exact file size limit not enforced until DEC-003 is resolved.
 DEC-004 (requotation): DEFERRED — one quotation per request enforced; re-quotation not implemented.
-DEC-005 (advance payment rule): OPEN — quotation advanceAmount accepted as Admin-entered absolute value. No fixed percentage applied. Required before Phase 3E.2 advance payment implementation.
+DEC-005 (advance payment rule): APPROVED and IMPLEMENTED — authoritative amount = Quotation.advanceAmount; no client-supplied amount.
+DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED — status/tracking only; no carrier API integration.
 DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking via InventoryRepository.findByProductIdWithLock() (@Lock PESSIMISTIC_WRITE). Cart-time check remains advisory.
 DEC-007 (tax/delivery charge): DEFERRED — order totalAmount = subtotalAmount (no tax/delivery).
 DEC-010 (default address): DEFERRED — explicit owned addressId required at checkout; no silent default fallback.
 DEC-006 (order cancellation): OPEN — not implemented; POST /orders/{id}/cancel is out of scope until DEC-006 is resolved.
 
-V5 migration (custom artwork tables): present in classpath; not yet run against live PostgreSQL. Developer should run db-integration suite after Phase 3E.1 commit.
+V5 migration (custom artwork tables): present in classpath; not yet run against live PostgreSQL. Developer should run db-integration suite after Phase 3E commit.
 
 Note: Mockito dynamic-agent JVM warnings on Java 26 suppressed via -XX:+EnableDynamicAgentLoading in Surefire config.
 
@@ -376,27 +397,29 @@ See DECISION_LOG.md.
 DEC-013 (Flyway as migration framework): APPROVED.
 DEC-010 (default address behavior): DEFERRED.
 DEC-009 (inventory concurrency strategy): APPROVED (checkout-time pessimistic locking) — did not block Phase 2C persistence.
-DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-005 (advance payment rule), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
+DEC-005 (advance payment rule): APPROVED and IMPLEMENTED.
+DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED.
+DEC-002 (JWT logout/revocation), DEC-003 (file upload limits), DEC-006 (order cancellation eligibility), DEC-011 (frontend test runner), DEC-012 (E2E framework) remain OPEN.
 
 ## Last Completed Task
 
-Phase 3E.1 — Custom Artwork Request + Admin Review + Quotation — COMPLETED and VERIFIED.
+Phase 3E.2 — Quotation Decision + Advance Payment + Admin Production Workflow + Shipping — COMPLETED and VERIFIED.
 
 Build verification: `mvn clean test`
-Result: Tests run: 225, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 270, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 Endpoints implemented:
 Customer (CUSTOMER role):
-- POST /api/v1/custom-requests              — 201 + CustomArtworkRequestResponse; initial status REQUESTED
-- GET  /api/v1/custom-requests              — 200 + PageResponse<CustomArtworkRequestSummary>; page/size/status filter
-- GET  /api/v1/custom-requests/{id}         — 200 + CustomArtworkRequestResponse; 404 on foreign/missing id
-- POST /api/v1/custom-requests/{id}/images  — 201 + CustomOrderImageResponse; image/* only; UUID filename; logical storage reference
-- GET  /api/v1/custom-requests/{id}/quotation — 200 + QuotationResponse; 404 no quotation or foreign request
+- POST /api/v1/quotations/{id}/approve          — 200 + QuotationResponse; PENDING→APPROVED; expiry enforced; 409 invalid state; 404 foreign
+- POST /api/v1/quotations/{id}/reject           — 200 + QuotationResponse; PENDING→REJECTED; 409 invalid state; 404 foreign
+- POST /api/v1/custom-requests/{id}/payments    — 201 + PaymentResponse; advance from Quotation.advanceAmount (DEC-005); sandbox→IN_PRODUCTION; 409 duplicate/wrong state
+- GET  /api/v1/custom-requests/{id}/payments    — 200 + PaymentResponse[]; ownership enforced
+- GET  /api/v1/custom-requests/{id}/shipment    — 200 + ShipmentResponse; ownership enforced; 404 no shipment
 Admin (ADMIN role):
-- GET   /api/v1/admin/custom-requests                — 200 + PageResponse<CustomArtworkRequestSummary>; status filter
-- PATCH /api/v1/admin/custom-requests/{id}/review    — 200 + CustomArtworkRequestResponse; ACCEPT/REJECT + notes; 409 invalid transition
-- POST  /api/v1/admin/custom-requests/{id}/quotation — 201 + QuotationResponse; requires UNDER_REVIEW; 409 duplicate/wrong state
-- GET   /api/v1/admin/quotations/{id}                — 200 + QuotationResponse
+- PATCH /api/v1/admin/custom-requests/{id}/status  — 200 + CustomArtworkRequestResponse; IN_PRODUCTION→COMPLETED→SHIPPED→DELIVERED only; 409 invalid
+- POST  /api/v1/admin/shipments                    — 201 + ShipmentResponse; PENDING initial status; DEC-008
+- PATCH /api/v1/admin/shipments/{id}/status        — 200 + ShipmentResponse; PENDING→SHIPPED→DELIVERED; auto timestamps; advances custom request status
+- GET   /api/v1/admin/shipments/{id}               — 200 + ShipmentResponse
 
 Ownership enforcement:
 - Customer user ID resolved exclusively from JWT (CurrentUserService) — no client-supplied IDs.
@@ -459,10 +482,37 @@ Schema changes: None. V1–V5 unchanged. V5 already present; not yet verified ag
 
 DEC-003 (file upload limits): OPEN — image/* content-type only; no size limit.
 DEC-004 (requotation): DEFERRED — one quotation per request only.
-DEC-005 (advance payment rule): OPEN — advance amount accepted as optional absolute value. BLOCKER for Phase 3E.2 advance payment implementation until decision is made.
+DEC-005 (advance payment rule): APPROVED and IMPLEMENTED.
+DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED.
 
 PostgreSQL regression: Developer should run full db-integration suite (V5 not yet verified):
   mvn clean test -P db-integration-tests -Dspring.profiles.active=db-integration
+
+Phase 3E.2 files created:
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/ShipmentResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/ShipmentCreateRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/customartwork/ShipmentStatusUpdateRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/CustomAdvancePaymentService.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminProductionService.java
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkPhase2ServiceTest.java (27 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkPhase2ControllerTest.java (18 tests)
+
+Phase 3E.2 files modified:
+- backend/src/main/java/com/handmadeart/ecommerce/service/QuotationService.java
+  (approveQuotation, rejectQuotation, resolveOwnedQuotation methods added)
+- backend/src/main/java/com/handmadeart/ecommerce/controller/CustomArtworkController.java
+  (approve/reject quotation, advance payment, shipment endpoints; @RequestMapping removed — explicit paths)
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminCustomArtworkController.java
+  (production status, shipment create/update/get endpoints; AdminProductionService injected)
+- backend/src/main/java/com/handmadeart/ecommerce/config/SecurityConfig.java
+  (/api/v1/quotations/** → CUSTOMER added)
+- backend/src/test/java/com/handmadeart/ecommerce/HandmadeArtEcommerceApplicationTests.java
+  (ShipmentRepository mock added)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java
+  (CustomAdvancePaymentService, AdminProductionService mocks added)
+- backend/src/test/java/com/handmadeart/ecommerce/CustomArtworkControllerTest.java
+  (CustomAdvancePaymentService, AdminProductionService mocks added)
+- project-docs/DEVELOPMENT_STATUS.md
 
 ## Prior Last Completed Task (Phase 3D.1)
 
@@ -677,12 +727,13 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3E.1 complete and verified.
+None. Phase 3E.2 complete and verified.
 
 ## Next Recommended Task
 
-Phase 3E.2 — Quotation Approval/Rejection + Advance Payment.
+Phase 3F — Remaining Admin/Customer API Gap Review and Backend Final Validation.
 
-Implement POST /api/v1/quotations/{id}/approve and POST /api/v1/quotations/{id}/reject (customer decisions).
-Implement POST /api/v1/custom-requests/{id}/payments (advance payment initiation after approval).
-Requires DEC-005 (advance payment rule) to be resolved before advance payment amount logic can be implemented.
+Review approved REST API spec for any unimplemented endpoints across all modules (admin customer management,
+customer profile, address management, order admin endpoints). Implement or document any approved gaps.
+Run full db-integration test suite against live PostgreSQL to validate V5 migration.
+Prepare for Phase 4 (Frontend React initialization).

@@ -84,6 +84,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/orders", "/api/v1/orders/**").hasRole("CUSTOMER")
                 // Customer custom artwork requests: REST API Spec §13 CUSTOMER role
                 .requestMatchers("/api/v1/custom-requests", "/api/v1/custom-requests/**").hasRole("CUSTOMER")
+                // Customer quotation decisions: REST API Spec §14 — approve/reject quotations
+                .requestMatchers("/api/v1/quotations", "/api/v1/quotations/**").hasRole("CUSTOMER")
                 // All other requests require a valid authenticated principal (any role)
                 .anyRequest().authenticated()
             )

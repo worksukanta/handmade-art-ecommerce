@@ -15,6 +15,7 @@ import com.handmadeart.ecommerce.repository.ProductImageRepository;
 import com.handmadeart.ecommerce.repository.ProductRelatedRepository;
 import com.handmadeart.ecommerce.repository.ProductRepository;
 import com.handmadeart.ecommerce.repository.QuotationRepository;
+import com.handmadeart.ecommerce.repository.ShipmentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -32,6 +33,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * PaymentService requires PaymentRepository (Phase 3D.2).
  * CustomArtworkRequestService requires CustomOrderRequestRepository, CustomOrderImageRepository (Phase 3E.1).
  * QuotationService requires QuotationRepository, CustomOrderRequestRepository (Phase 3E.1).
+ * CustomAdvancePaymentService requires ShipmentRepository (Phase 3E.2).
+ * AdminProductionService requires ShipmentRepository, CustomerOrderRepository (Phase 3E.2).
  */
 @SpringBootTest
 class HandmadeArtEcommerceApplicationTests {
@@ -80,6 +83,9 @@ class HandmadeArtEcommerceApplicationTests {
 
     @MockitoBean
     private QuotationRepository quotationRepository;
+
+    @MockitoBean
+    private ShipmentRepository shipmentRepository;
 
     @Test
     void contextLoads() {

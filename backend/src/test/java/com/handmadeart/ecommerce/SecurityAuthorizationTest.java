@@ -109,6 +109,12 @@ class SecurityAuthorizationTest {
     @MockitoBean
     private QuotationService quotationService;
 
+    @MockitoBean
+    private com.handmadeart.ecommerce.service.CustomAdvancePaymentService customAdvancePaymentService;
+
+    @MockitoBean
+    private com.handmadeart.ecommerce.service.AdminProductionService adminProductionService;
+
     // -------------------------------------------------------------------------
     // Test configuration
     // -------------------------------------------------------------------------

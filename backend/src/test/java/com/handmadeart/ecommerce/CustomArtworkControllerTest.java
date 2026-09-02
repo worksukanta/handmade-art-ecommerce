@@ -93,6 +93,8 @@ class CustomArtworkControllerTest {
 
     @MockitoBean private CustomArtworkRequestService customArtworkRequestService;
     @MockitoBean private QuotationService quotationService;
+    @MockitoBean private com.handmadeart.ecommerce.service.CustomAdvancePaymentService advancePaymentService;
+    @MockitoBean private com.handmadeart.ecommerce.service.AdminProductionService adminProductionService;
     @MockitoBean private CurrentUserService currentUserService;
     @MockitoBean private AppUserDetailsService appUserDetailsService;
 
