@@ -12,26 +12,28 @@ Phase 3 — Backend Functional Development
 
 ## Current Module
 
-Phase 3F.2A — Customer Account, Addresses & Checkout Validation — COMPLETED
-Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — NEXT
+Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — COMPLETED
+Backend Implementation — COMPLETE (except decision-blocked/deferred endpoints)
 
 ## Last Verified Milestone
 
-Phase 3F.2A — Customer Account Profile, Address CRUD, Checkout Validation — COMPLETED and VERIFIED.
+Phase 3F.2B — Admin Orders, Admin Payments, Admin Customers, Customer Order Shipment — COMPLETED and VERIFIED.
 
 `mvn clean test` (default profile, no PostgreSQL required)
-Result: Tests run: 300, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+Result: Tests run: 322, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
 
 DEC-001 (payment provider): DEFERRED — sandbox/mock flow implemented (immediate SUCCESS on initiation).
 DEC-002 (JWT logout/revocation) remains OPEN. Logout not implemented.
 DEC-003 (file upload type/size limits) remains OPEN. Image upload implemented with content-type validation (image/* only); exact size limits not enforced pending DEC-003 resolution.
 DEC-004 (requotation): DEFERRED — one quotation per request enforced; re-quotation not implemented.
 DEC-005 (advance payment rule): APPROVED and IMPLEMENTED — authoritative amount = stored Quotation.advanceAmount; no client-supplied amount accepted.
+DEC-006 (order cancellation): OPEN — POST /orders/{id}/cancel not implemented, blocked by DEC-006.
+DEC-007 (tax/delivery charge) remains DEFERRED. Order totals = item subtotals only (totalAmount = subtotalAmount).
 DEC-008 (shipping/tracking): APPROVED and IMPLEMENTED — status/tracking-based; no carrier API integration.
 DEC-009 (inventory concurrency strategy): APPROVED and IMPLEMENTED — checkout-time pessimistic locking.
-DEC-007 (tax/delivery charge) remains DEFERRED. Order totals = item subtotals only (totalAmount = subtotalAmount).
 DEC-010 (default address) remains DEFERRED. Explicit owned addressId required; no silent fallback.
-DEC-006 (order cancellation): OPEN — not in scope for Phase 3E.
+
+Final backend endpoint catalogue: 53 IMPLEMENTED, 3 decision-blocked (POST /auth/logout DEC-002, POST /orders/{id}/cancel DEC-006, POST /payments/provider-callback DEC-001), 0 other gaps.
 
 PostgreSQL regression: NOT executed in this phase. Developer should run the full db-integration suite (V5 not yet verified against live DB).
 
@@ -118,7 +120,7 @@ project-docs/
 * [x] Advance Payment (Phase 3E.2 — COMPLETE, DEC-005)
 * [x] Production Workflow (Phase 3E.2 — COMPLETE)
 * [x] Shipping/Delivery (Phase 3E.2 — COMPLETE, DEC-008)
-* [ ] Admin APIs (gap review pending)
+* [x] Admin APIs (Phase 3F.2B — admin order/payment/customer management COMPLETE)
 * [ ] Backend Integration and Regression
 * [ ] React Project Initialization
 * [ ] Authentication UI
@@ -727,7 +729,76 @@ Files modified:
 
 ## Current Task
 
-None. Phase 3F.2A complete and verified.
+None. Phase 3F.2B complete and verified.
+
+## Phase 3F.2B — Admin Orders, Payments, Customers, Order Shipment — COMPLETED
+
+Implemented all 7 remaining implementable endpoints from Phase 3F.1 audit:
+- GET /api/v1/admin/orders — paginated list of all orders (admin)
+- GET /api/v1/admin/orders/{id} — order detail (admin)
+- PATCH /api/v1/admin/orders/{id}/status — order status transition (admin, DEC-006 guard on CANCELLED)
+- GET /api/v1/admin/payments/{id} — payment detail (admin)
+- GET /api/v1/orders/{id}/shipment — customer view own ready-made order shipment (DEC-008)
+- GET /api/v1/admin/customers — paginated customer list (admin, CUSTOMER role only)
+- GET /api/v1/admin/customers/{id} — customer detail (admin, password hash never exposed)
+
+Order status transition rules (admin only): PENDING_PAYMENT → CONFIRMED → PROCESSING → SHIPPED → DELIVERED.
+CANCELLED blocked: DEC-006 OPEN — returns 409 with explanation.
+No backwards/skipping transitions.
+Transition logic in AdminOrderService (service layer).
+
+CUSTOMER denied all /admin/** endpoints → 403. Ownership enforced throughout.
+
+`mvn clean test`: Tests run: 322, Failures: 0, Errors: 0, Skipped: 0. BUILD SUCCESS.
+
+### Files created
+
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/AdminOrderStatusRequest.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/AdminOrderResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/AdminOrderSummaryResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/order/AdminPaymentResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/dto/admin/AdminCustomerResponse.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminOrderService.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminPaymentService.java
+- backend/src/main/java/com/handmadeart/ecommerce/service/AdminCustomerService.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminOrderController.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminPaymentController.java
+- backend/src/main/java/com/handmadeart/ecommerce/controller/AdminCustomerController.java
+- backend/src/test/java/com/handmadeart/ecommerce/AdminOrderControllerTest.java (8 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/AdminPaymentControllerTest.java (4 tests)
+- backend/src/test/java/com/handmadeart/ecommerce/AdminCustomerControllerTest.java (6 tests)
+
+### Files modified
+
+- backend/src/main/java/com/handmadeart/ecommerce/controller/OrderController.java (added GET /orders/{id}/shipment)
+- backend/src/main/java/com/handmadeart/ecommerce/service/OrderService.java (added getOrderShipment + ShipmentRepository dep)
+- backend/src/main/java/com/handmadeart/ecommerce/repository/AppUserRepository.java (added findByRole pageable)
+- backend/src/test/java/com/handmadeart/ecommerce/OrderControllerTest.java (added ORD-C-07–ORD-C-10 shipment tests)
+- backend/src/test/java/com/handmadeart/ecommerce/OrderServiceTest.java (updated constructor to 3-arg)
+- backend/src/test/java/com/handmadeart/ecommerce/SecurityAuthorizationTest.java (added service mocks, fixed AZ-04 expectation to 200)
+
+### Final endpoint catalogue
+
+Total: 60 approved endpoints
+Implemented: 53
+Decision-blocked: 3 (POST /auth/logout DEC-002 OPEN, POST /orders/{id}/cancel DEC-006 OPEN, POST /payments/provider-callback DEC-001 DEFERRED)
+Other gaps: 0
+
+### Unresolved decisions
+
+- DEC-002 (JWT logout/revocation): OPEN — blocks POST /auth/logout
+- DEC-003 (upload limits): OPEN — content-type validation present; size limits pending
+- DEC-006 (order cancellation): OPEN — blocks POST /orders/{id}/cancel
+- DEC-011 (frontend test runner): OPEN — blocks frontend testing
+- DEC-012 (E2E framework): OPEN — blocks E2E testing
+
+## Next Recommended Task
+
+Backend administrative and regression review, then frontend initialization.
+
+Recommended next backend phase: PostgreSQL db-integration test suite run (validate V5 migration against live DB), then begin React frontend initialization.
+
+Decision-blocked endpoints (DEC-001, DEC-002, DEC-006) remain deferred until decisions resolved.
 
 ## Phase 3F.2A — Customer Account, Addresses & Checkout Validation — COMPLETED
 
@@ -842,16 +913,9 @@ Schema support: All above endpoints are fully supported by existing schema (AppU
 
 ## Next Recommended Task
 
-Phase 3F.2B — Implement Admin Orders, Admin Payments, Admin Customers, Customer Order Shipment.
+Backend implementation milestone COMPLETE (except decision-blocked/deferred endpoints).
 
-Remaining 7 implementable endpoints:
-1. GET /admin/orders — admin order list
-2. GET /admin/orders/{id} — admin order detail
-3. PATCH /admin/orders/{id}/status — admin order status transition
-4. GET /admin/payments/{id} — admin payment view
-5. GET /orders/{id}/shipment — customer ready-made order shipment view
-6. GET /admin/customers — admin customer list
-7. GET /admin/customers/{id} — admin customer detail
-
-Decision-blocked endpoints (DEC-001, DEC-002, DEC-006) remain deferred until decisions are resolved.
-Run full db-integration test suite against live PostgreSQL to validate V5 migration.
+Recommended actions:
+1. Run full db-integration test suite against live PostgreSQL to validate V5 migration (V5 not yet verified against live DB).
+2. Begin React frontend project initialization (Phase 4).
+3. Resolve open decisions (DEC-002 logout, DEC-006 cancellation) when scope is confirmed.

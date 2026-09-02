@@ -50,6 +50,13 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     long countByRole(UserRole role);
 
     /**
+     * Return a page of users by role — used by admin customer list (UC-019).
+     * CUSTOMER accounts only are returned; ADMIN accounts excluded.
+     */
+    org.springframework.data.domain.Page<AppUser> findByRole(
+            UserRole role, org.springframework.data.domain.Pageable pageable);
+
+    /**
      * Find a user by email using a JPQL query that explicitly lower-cases both
      * sides — an alternative for callers that already have a lower-cased value.
      * The standard {@code findByEmailIgnoreCase} is preferred in most cases.

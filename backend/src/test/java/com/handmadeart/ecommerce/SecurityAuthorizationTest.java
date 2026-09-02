@@ -121,6 +121,15 @@ class SecurityAuthorizationTest {
     @MockitoBean
     private com.handmadeart.ecommerce.service.CheckoutValidationService checkoutValidationService;
 
+    @MockitoBean
+    private com.handmadeart.ecommerce.service.AdminOrderService adminOrderService;
+
+    @MockitoBean
+    private com.handmadeart.ecommerce.service.AdminPaymentService adminPaymentService;
+
+    @MockitoBean
+    private com.handmadeart.ecommerce.service.AdminCustomerService adminCustomerService;
+
     // -------------------------------------------------------------------------
     // Test configuration
     // -------------------------------------------------------------------------
@@ -205,21 +214,24 @@ class SecurityAuthorizationTest {
     }
 
     // -------------------------------------------------------------------------
-    // AZ-04: ADMIN JWT → ADMIN resource → passes security (404 = no handler yet)
+    // AZ-04: ADMIN JWT → ADMIN resource → passes security (200 = handler now registered)
     // -------------------------------------------------------------------------
 
     @Test
-    @DisplayName("AZ-04: ADMIN JWT passes security check on ADMIN-only path (no business handler yet = 404)")
+    @DisplayName("AZ-04: ADMIN JWT passes security check on ADMIN-only path (200 = authorized + handler registered)")
     void adminToken_adminPath_passesSecurityReturns404() throws Exception {
         String email = "admin@example.com";
         when(appUserDetailsService.loadUserByUsername(anyString()))
                 .thenReturn(adminDetails(email));
+        // AdminCustomerController is now registered; stub the service to return a valid empty page
+        when(adminCustomerService.listCustomers(0, 20))
+                .thenReturn(com.handmadeart.ecommerce.dto.catalogue.PageResponse.from(
+                        new org.springframework.data.domain.PageImpl<>(java.util.List.of())));
 
-        // 404 means Spring Security authorized the request — no controller registered yet.
-        // This is the correct result: authorization passed, no handler found.
+        // 200 means Spring Security authorized the request and the controller handled it.
         mockMvc.perform(get("/api/v1/admin/customers")
                         .header("Authorization", "Bearer " + adminToken(email)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
     }
 
     // -------------------------------------------------------------------------

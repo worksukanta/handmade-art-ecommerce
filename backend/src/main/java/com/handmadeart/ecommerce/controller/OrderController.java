@@ -1,6 +1,7 @@
 package com.handmadeart.ecommerce.controller;
 
 import com.handmadeart.ecommerce.dto.catalogue.PageResponse;
+import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.dto.order.OrderResponse;
 import com.handmadeart.ecommerce.dto.order.OrderSummaryResponse;
 import com.handmadeart.ecommerce.entity.AppUser;
@@ -17,8 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
  * Customer order read controller.
  *
  * Endpoints (REST API Spec §10):
- *   GET /api/v1/orders        — paginated order history for the authenticated customer
- *   GET /api/v1/orders/{id}   — single order detail for the authenticated customer
+ *   GET /api/v1/orders              — paginated order history for the authenticated customer
+ *   GET /api/v1/orders/{id}         — single order detail for the authenticated customer
+ *   GET /api/v1/orders/{id}/shipment — order shipment/tracking view
  *
  * Authorization:
  *   CUSTOMER role required (SecurityConfig — /api/v1/orders/**).
@@ -72,6 +74,24 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrder(@PathVariable Long id) {
         AppUser currentUser = currentUserService.getAuthenticatedUser();
         OrderResponse response = orderService.getOrderDetail(currentUser, id);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get shipment/tracking information for an owned order.
+     *
+     * Method:  GET
+     * Path:    /api/v1/orders/{id}/shipment
+     * Auth:    CUSTOMER
+     * Success: 200 OK + ShipmentResponse
+     * Errors:  401, 403, 404 (foreign/missing order or no shipment yet)
+     *
+     * No carrier API integration (DEC-008 APPROVED).
+     */
+    @GetMapping("/{id}/shipment")
+    public ResponseEntity<ShipmentResponse> getOrderShipment(@PathVariable Long id) {
+        AppUser currentUser = currentUserService.getAuthenticatedUser();
+        ShipmentResponse response = orderService.getOrderShipment(currentUser, id);
         return ResponseEntity.ok(response);
     }
 }

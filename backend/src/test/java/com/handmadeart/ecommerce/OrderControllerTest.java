@@ -3,6 +3,7 @@ package com.handmadeart.ecommerce;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.handmadeart.ecommerce.controller.OrderController;
 import com.handmadeart.ecommerce.dto.catalogue.PageResponse;
+import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.dto.order.OrderResponse;
 import com.handmadeart.ecommerce.dto.order.OrderSummaryResponse;
 import com.handmadeart.ecommerce.entity.AppUser;
@@ -54,6 +55,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   ORD-C-04  CUSTOMER GET /orders/{id} with foreign id → 404
  *   ORD-C-05  ADMIN GET /orders → 403 (CUSTOMER-only)
  *   ORD-C-06  Unauthenticated GET /orders/{id} → 401
+ *   ORD-C-07  CUSTOMER GET /orders/{id}/shipment (own, has shipment) → 200
+ *   ORD-C-08  CUSTOMER GET /orders/{id}/shipment (foreign order) → 404
+ *   ORD-C-09  CUSTOMER GET /orders/{id}/shipment (no shipment yet) → 404
+ *   ORD-C-10  Unauthenticated GET /orders/{id}/shipment → 401
  */
 @WebMvcTest(OrderController.class)
 @Import({
@@ -214,6 +219,73 @@ class OrderControllerTest {
     @DisplayName("ORD-C-06: Unauthenticated GET /orders/{id} returns 401")
     void unauthenticated_getOrderById_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/orders/10"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    // -------------------------------------------------------------------------
+    // ORD-C-07: CUSTOMER GET /orders/{id}/shipment (own order, shipment exists) → 200
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("ORD-C-07: CUSTOMER GET /orders/{id}/shipment for own order returns 200 + ShipmentResponse")
+    void customerToken_ownOrderShipment_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
+
+        ShipmentResponse shipmentResponse = new ShipmentResponse();
+        when(orderService.getOrderShipment(any(), anyLong())).thenReturn(shipmentResponse);
+
+        mockMvc.perform(get("/api/v1/orders/10/shipment")
+                        .header("Authorization", customerToken()))
+                .andExpect(status().isOk());
+    }
+
+    // -------------------------------------------------------------------------
+    // ORD-C-08: CUSTOMER GET /orders/{id}/shipment (foreign order) → 404
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("ORD-C-08: CUSTOMER GET /orders/{id}/shipment for foreign order returns 404")
+    void customerToken_foreignOrderShipment_returns404() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
+        when(orderService.getOrderShipment(any(), anyLong()))
+                .thenThrow(new ResourceNotFoundException("Order not found"));
+
+        mockMvc.perform(get("/api/v1/orders/999/shipment")
+                        .header("Authorization", customerToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    // -------------------------------------------------------------------------
+    // ORD-C-09: CUSTOMER GET /orders/{id}/shipment (own order, no shipment) → 404
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("ORD-C-09: CUSTOMER GET /orders/{id}/shipment for own order with no shipment returns 404")
+    void customerToken_ownOrderNoShipment_returns404() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        when(currentUserService.getAuthenticatedUser()).thenReturn(buildCustomerEntity());
+        when(orderService.getOrderShipment(any(), anyLong()))
+                .thenThrow(new ResourceNotFoundException("Shipment not found"));
+
+        mockMvc.perform(get("/api/v1/orders/10/shipment")
+                        .header("Authorization", customerToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    // -------------------------------------------------------------------------
+    // ORD-C-10: Unauthenticated GET /orders/{id}/shipment → 401
+    // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("ORD-C-10: Unauthenticated GET /orders/{id}/shipment returns 401")
+    void unauthenticated_getOrderShipment_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/orders/10/shipment"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
     }

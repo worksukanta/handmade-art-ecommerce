@@ -11,6 +11,7 @@ import com.handmadeart.ecommerce.entity.UserRole;
 import com.handmadeart.ecommerce.exception.ResourceNotFoundException;
 import com.handmadeart.ecommerce.repository.CustomerOrderRepository;
 import com.handmadeart.ecommerce.repository.OrderItemRepository;
+import com.handmadeart.ecommerce.repository.ShipmentRepository;
 import com.handmadeart.ecommerce.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,12 +48,13 @@ class OrderServiceTest {
 
     @Mock private CustomerOrderRepository customerOrderRepository;
     @Mock private OrderItemRepository orderItemRepository;
+    @Mock private ShipmentRepository shipmentRepository;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(customerOrderRepository, orderItemRepository);
+        orderService = new OrderService(customerOrderRepository, orderItemRepository, shipmentRepository);
     }
 
     // =========================================================================
