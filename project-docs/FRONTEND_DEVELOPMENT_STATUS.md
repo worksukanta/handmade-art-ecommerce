@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4A.2 COMPLETE / AUTH-READY ARCHITECTURE ESTABLISHED**
+- Frontend status: **PHASE 4B COMPLETED / AUTHENTICATION UI INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
 - Frontend branch: `phase-4a-frontend-foundation`
-- Current milestone: Phase 4A.2 — Auth-ready application shell and frontend architecture
-- `frontend/` state: Vite React + TypeScript application with an auth-aware routed shell, centralized Axios client, session context, and route guards
+- Current milestone: Phase 4B — Authentication UI and backend integration
+- `frontend/` state: Vite React + TypeScript application with complete login/registration UI, auth-aware routing, session recovery, and role navigation
 
 ## Approved frontend stack and setup facts
 
@@ -37,6 +37,18 @@
 - Routing: reusable authenticated and CUSTOMER/ADMIN role guards protect approved placeholder routes; guards remain UX controls and backend authorization remains authoritative
 - Shell: public, CUSTOMER, and ADMIN navigation states with local-only sign-out; no backend logout call
 - Error handling: backend `ApiError` responses normalize to safe status/message/details for future UI use
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS with no warnings
+- Decisions: DEC-002, DEC-011, and DEC-012 remain OPEN
+
+## Phase 4B verification
+
+- Login: accessible email/password form integrated with `POST /auth/login`, normalized failures, duplicate-submit prevention, and CUSTOMER/ADMIN post-login routing
+- Registration: approved name/email/password/optional-phone contract integrated with `POST /auth/register`; confirmation password remains frontend-only; success redirects to login without auto-login
+- Session recovery: a persisted token is verified through `GET /auth/me`; protected content remains hidden during initialization; invalid/expired sessions are cleared
+- Sign-out: local token/context clearing only; no server logout or revocation is claimed while DEC-002 remains open
+- Navigation: anonymous, CUSTOMER, and ADMIN states remain role-aware; route guards are UX controls and backend authorization remains authoritative
+- Forms: reusable accessible field, error-summary, and loading-submit primitives added with backend-aligned validation constraints
 - Production build: `npm run build` — PASS
 - Lint: `npm run lint` — PASS with no warnings
 - Decisions: DEC-002, DEC-011, and DEC-012 remain OPEN
@@ -126,8 +138,8 @@
 
 - The UI/UX specification flags the lack of an Admin product-list endpoint, but the later backend/API baseline implements `GET /api/v1/admin/products`; the UI document's warning is stale relative to the accepted implementation.
 - The UI/UX specification mentions `PUT /admin/shipments/{id}`, while the accepted backend exposes shipment creation as `POST /api/v1/admin/shipments` and status updates as `PATCH /api/v1/admin/shipments/{id}/status`; frontend implementation must follow the frozen REST/backend contract.
-- Historical development-status entries may still describe frontend initialization as pending; this file is the current frontend-specific status through Phase 4A.2.
+- Historical development-status entries may still describe frontend initialization as pending; this file is the current frontend-specific status through Phase 4B.
 
 ## Next recommended task
 
-Begin Phase 4B — Authentication UI for the approved login and registration flows. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
+Begin Phase 4C — Public Catalogue + Product Experience. Keep DEC-002, DEC-011, and DEC-012 open unless separately approved.
