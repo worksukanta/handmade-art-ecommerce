@@ -169,6 +169,16 @@ public class CustomAdvancePaymentService {
                 .collect(Collectors.toList());
     }
 
+    /** Retrieve all payments for a custom request without customer ownership filtering. */
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> adminGetCustomRequestPayments(Long requestId) {
+        requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Custom request not found"));
+        return paymentRepository.findByCustomOrderRequestId(requestId).stream()
+                .map(this::toPaymentResponse)
+                .collect(Collectors.toList());
+    }
+
     // =========================================================================
     // GET /api/v1/custom-requests/{id}/shipment — customer views own shipment
     // =========================================================================

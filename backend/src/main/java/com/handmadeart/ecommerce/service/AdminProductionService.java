@@ -228,6 +228,17 @@ public class AdminProductionService {
         return ShipmentResponse.from(shipment);
     }
 
+    /** Retrieve the shipment associated with a custom request. */
+    @Transactional(readOnly = true)
+    public ShipmentResponse adminGetShipmentByRequestId(Long requestId) {
+        requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Custom request not found"));
+        return shipmentRepository.findByCustomOrderRequestId(requestId)
+                .map(ShipmentResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Shipment not found for custom request " + requestId));
+    }
+
     // =========================================================================
     // Private helpers
     // =========================================================================

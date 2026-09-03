@@ -280,6 +280,19 @@ public class CustomArtworkRequestService {
         return PageResponse.from(pageResult.map(CustomArtworkRequestSummary::from));
     }
 
+    /**
+     * Get a custom request by ID for an authenticated Admin.
+     * Admin authorization is enforced by the /api/v1/admin/** security rule;
+     * unlike the customer detail method, this lookup intentionally has no
+     * customer ownership filter.
+     */
+    @Transactional(readOnly = true)
+    public CustomArtworkRequestResponse adminGetCustomRequest(Long requestId) {
+        CustomOrderRequest req = requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Custom request not found"));
+        return toFullResponse(req);
+    }
+
     // =========================================================================
     // PATCH /api/v1/admin/custom-requests/{id}/review — Admin reviews request
     // =========================================================================

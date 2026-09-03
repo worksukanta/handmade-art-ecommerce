@@ -75,6 +75,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   CAR-C-13  ADMIN POST /admin/custom-requests/{id}/quotation → 201
  *   CAR-C-14  ADMIN GET /admin/quotations/{id} → 200
  *   CAR-C-15  Unauthenticated GET /custom-requests → 401
+ *   CAR-C-16  ADMIN GET /admin/custom-requests/{id} → 200
+ *   CAR-C-17  missing admin custom-request detail → normalized 404
+ *   CAR-C-18  CUSTOMER denied admin custom-request detail → 403
+ *   CAR-C-19  unauthenticated admin custom-request detail → 401
  */
 @WebMvcTest({CustomArtworkController.class, AdminCustomArtworkController.class})
 @Import({
@@ -437,6 +441,49 @@ class CustomArtworkControllerTest {
     @DisplayName("CAR-C-15: Unauthenticated GET /custom-requests returns 401")
     void unauthenticated_listCustomRequests_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/custom-requests"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("CAR-C-16: ADMIN GET /admin/custom-requests/{id} returns 200")
+    void adminToken_getCustomRequestDetail_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(customArtworkRequestService.adminGetCustomRequest(10L))
+                .thenReturn(buildRequestResponse());
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("CAR-C-17: missing admin custom-request detail returns normalized 404")
+    void adminToken_getMissingCustomRequestDetail_returns404() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(customArtworkRequestService.adminGetCustomRequest(999L))
+                .thenThrow(new ResourceNotFoundException("Custom request not found"));
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/999")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Custom request not found"));
+    }
+
+    @Test
+    @DisplayName("CAR-C-18: CUSTOMER cannot access admin custom-request detail")
+    void customerToken_getAdminCustomRequestDetail_returns403() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10")
+                        .header("Authorization", customerToken()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("CAR-C-19: unauthenticated admin custom-request detail returns 401")
+    void unauthenticated_getAdminCustomRequestDetail_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10"))
                 .andExpect(status().isUnauthorized());
     }
 

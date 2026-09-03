@@ -184,6 +184,17 @@ public class QuotationService {
         return QuotationResponse.from(quotation);
     }
 
+    /** Retrieve the single MVP quotation associated with a custom request. */
+    @Transactional(readOnly = true)
+    public QuotationResponse adminGetQuotationByRequestId(Long requestId) {
+        requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Custom request not found"));
+        return quotationRepository.findByCustomOrderRequestId(requestId)
+                .map(QuotationResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Quotation not found for custom request " + requestId));
+    }
+
     // =========================================================================
     // POST /api/v1/quotations/{id}/approve — Customer approves quotation
     // =========================================================================

@@ -816,4 +816,104 @@ class CustomArtworkPhase2ServiceTest {
         assertThatThrownBy(() -> adminProductionService.updateShipmentStatus(300L, statusReq))
                 .isInstanceOf(InvalidWorkflowTransitionException.class);
     }
+
+    @Test
+    @DisplayName("ADMIN request-scoped quotation returns the associated quotation")
+    void adminGetQuotationByRequestId_returnsAssociatedQuotation() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.QUOTED);
+        Quotation quotation = buildQuotation(100L, req, QuotationStatus.PENDING,
+                OffsetDateTime.now().plusDays(5), new BigDecimal("100.00"));
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(quotation));
+
+        QuotationResponse response = quotationService.adminGetQuotationByRequestId(10L);
+
+        assertThat(response.getId()).isEqualTo(100L);
+        assertThat(response.getCustomOrderRequestId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped quotation returns not found when absent")
+    void adminGetQuotationByRequestId_noQuotation_throwsNotFound() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.UNDER_REVIEW);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> quotationService.adminGetQuotationByRequestId(10L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Quotation not found for custom request 10");
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped quotation validates the parent request")
+    void adminGetQuotationByRequestId_unknownRequest_throwsNotFound() {
+        when(requestRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> quotationService.adminGetQuotationByRequestId(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Custom request not found");
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped payments returns only associated payments")
+    void adminGetCustomRequestPayments_returnsAssociatedPayments() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.IN_PRODUCTION);
+        Payment payment = buildPayment(200L, req, PaymentPurpose.ADVANCE, PaymentStatus.SUCCESS);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of(payment));
+
+        List<PaymentResponse> response = advancePaymentService.adminGetCustomRequestPayments(10L);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.getPaymentId()).isEqualTo(200L);
+            assertThat(item.getCustomOrderRequestId()).isEqualTo(10L);
+        });
+        verify(paymentRepository).findByCustomOrderRequestId(10L);
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped payments returns an empty collection when absent")
+    void adminGetCustomRequestPayments_noPayments_returnsEmptyList() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.APPROVED);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
+
+        assertThat(advancePaymentService.adminGetCustomRequestPayments(10L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped shipment returns the associated shipment")
+    void adminGetShipmentByRequestId_returnsAssociatedShipment() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.SHIPPED);
+        Shipment shipment = buildShipment(300L, req, ShipmentStatus.SHIPPED);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(shipmentRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(shipment));
+
+        ShipmentResponse response = adminProductionService.adminGetShipmentByRequestId(10L);
+
+        assertThat(response.getId()).isEqualTo(300L);
+        assertThat(response.getCustomOrderRequestId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped shipment returns not found when absent")
+    void adminGetShipmentByRequestId_noShipment_throwsNotFound() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), CustomOrderRequestStatus.COMPLETED);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(shipmentRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminProductionService.adminGetShipmentByRequestId(10L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Shipment not found for custom request 10");
+    }
+
+    @Test
+    @DisplayName("ADMIN request-scoped shipment validates the parent request")
+    void adminGetShipmentByRequestId_unknownRequest_throwsNotFound() {
+        when(requestRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminProductionService.adminGetShipmentByRequestId(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Custom request not found");
+    }
 }

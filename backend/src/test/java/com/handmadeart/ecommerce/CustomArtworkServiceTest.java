@@ -264,7 +264,50 @@ class CustomArtworkServiceTest {
     }
 
     @Test
-    @DisplayName("CAR-S-06a: valid image upload stores file beneath normalized root before metadata")
+    @DisplayName("CAR-S-06a: admin detail returns complete request and reference-image metadata without ownership filtering")
+    void adminGetCustomRequest_returnsFullResponseWithoutCustomerOwnershipCheck() {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(2L), CustomOrderRequestStatus.UNDER_REVIEW);
+        req.setDesignTheme("Botanical");
+        req.setReviewNotes("Feasible commission");
+        CustomOrderImage image = new CustomOrderImage();
+        image.setCustomOrderRequest(req);
+        image.setStorageReference("request-10/reference.png");
+        image.setOriginalFilename("reference.png");
+        image.setContentType("image/png");
+        image.setFileSizeBytes(2048);
+        setId(image, CustomOrderImage.class, 91L);
+
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(imageRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of(image));
+
+        CustomArtworkRequestResponse response = artworkService.adminGetCustomRequest(10L);
+
+        assertThat(response.getId()).isEqualTo(10L);
+        assertThat(response.getUserId()).isEqualTo(2L);
+        assertThat(response.getProductType()).isEqualTo("Oil Painting");
+        assertThat(response.getDescription()).isEqualTo("A custom oil painting");
+        assertThat(response.getDesignTheme()).isEqualTo("Botanical");
+        assertThat(response.getReviewNotes()).isEqualTo("Feasible commission");
+        assertThat(response.getStatus()).isEqualTo(CustomOrderRequestStatus.UNDER_REVIEW);
+        assertThat(response.getImages()).singleElement().satisfies(returnedImage -> {
+            assertThat(returnedImage.getId()).isEqualTo(91L);
+            assertThat(returnedImage.getOriginalFilename()).isEqualTo("reference.png");
+            assertThat(returnedImage.getStorageReference()).isEqualTo("request-10/reference.png");
+        });
+    }
+
+    @Test
+    @DisplayName("CAR-S-06b: admin detail returns existing not-found behavior for missing request")
+    void adminGetCustomRequest_missingRequest_returns404() {
+        when(requestRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> artworkService.adminGetCustomRequest(999L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Custom request not found");
+    }
+
+    @Test
+    @DisplayName("CAR-S-06c: valid image upload stores file beneath normalized root before metadata")
     void uploadReferenceImage_validImage_storesFileAndPersistsMetadata() {
         AppUser customer = buildCustomer(1L);
         CustomOrderRequest req = buildRequest(10L, customer, CustomOrderRequestStatus.REQUESTED);

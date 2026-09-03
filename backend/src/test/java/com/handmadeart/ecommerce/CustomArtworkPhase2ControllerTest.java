@@ -488,4 +488,78 @@ class CustomArtworkPhase2ControllerTest {
         mockMvc.perform(get("/api/v1/custom-requests/10/payments"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("ADMIN can read quotation by custom request ID")
+    void adminToken_getQuotationByRequestId_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(quotationService.adminGetQuotationByRequestId(10L)).thenReturn(buildApprovedQuotation());
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10/quotation")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("ADMIN quotation by request returns normalized not found")
+    void adminToken_getQuotationByRequestId_missing_returns404() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(quotationService.adminGetQuotationByRequestId(10L))
+                .thenThrow(new ResourceNotFoundException("Quotation not found for custom request 10"));
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10/quotation")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("ADMIN can read payments by custom request ID")
+    void adminToken_getPaymentsByRequestId_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(advancePaymentService.adminGetCustomRequestPayments(10L))
+                .thenReturn(List.of(buildAdvancePaymentResponse()));
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10/payments")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("ADMIN payment history is empty when the request has no payments")
+    void adminToken_getPaymentsByRequestId_empty_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(advancePaymentService.adminGetCustomRequestPayments(10L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10/payments")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("ADMIN can read shipment by custom request ID")
+    void adminToken_getShipmentByRequestId_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminProductionService.adminGetShipmentByRequestId(10L)).thenReturn(buildShipmentResponse());
+
+        mockMvc.perform(get("/api/v1/admin/custom-requests/10/shipment")
+                        .header("Authorization", adminToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("CUSTOMER and anonymous callers cannot read ADMIN request-scoped resources")
+    void nonAdmin_getRequestScopedAdminResources_areRejected() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+
+        for (String resource : List.of("quotation", "payments", "shipment")) {
+            String path = "/api/v1/admin/custom-requests/10/" + resource;
+            mockMvc.perform(get(path).header("Authorization", customerToken()))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get(path))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
 }

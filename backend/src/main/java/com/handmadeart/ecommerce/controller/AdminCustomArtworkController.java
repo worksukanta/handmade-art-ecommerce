@@ -9,11 +9,13 @@ import com.handmadeart.ecommerce.dto.customartwork.QuotationResponse;
 import com.handmadeart.ecommerce.dto.customartwork.ShipmentCreateRequest;
 import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.dto.customartwork.ShipmentStatusUpdateRequest;
+import com.handmadeart.ecommerce.dto.order.PaymentResponse;
 import com.handmadeart.ecommerce.entity.AppUser;
 import com.handmadeart.ecommerce.entity.CustomOrderRequestStatus;
 import com.handmadeart.ecommerce.service.AdminProductionService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
 import com.handmadeart.ecommerce.service.CustomArtworkRequestService;
+import com.handmadeart.ecommerce.service.CustomAdvancePaymentService;
 import com.handmadeart.ecommerce.service.QuotationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -27,11 +29,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Admin custom artwork management controller.
  *
  * Endpoints (REST API Spec §13, §14 admin, §15 shipping):
  *   GET   /api/v1/admin/custom-requests                   — list all custom requests
+ *   GET   /api/v1/admin/custom-requests/{id}              — get custom request detail
+ *   GET   /api/v1/admin/custom-requests/{id}/quotation    — get request quotation
+ *   GET   /api/v1/admin/custom-requests/{id}/payments     — get request payments
+ *   GET   /api/v1/admin/custom-requests/{id}/shipment     — get request shipment
  *   PATCH /api/v1/admin/custom-requests/{id}/review       — review a request
  *   POST  /api/v1/admin/custom-requests/{id}/quotation    — create a quotation
  *   GET   /api/v1/admin/quotations/{id}                   — get a quotation
@@ -53,15 +61,18 @@ public class AdminCustomArtworkController {
     private final CustomArtworkRequestService customArtworkRequestService;
     private final QuotationService quotationService;
     private final AdminProductionService adminProductionService;
+    private final CustomAdvancePaymentService customAdvancePaymentService;
     private final CurrentUserService currentUserService;
 
     public AdminCustomArtworkController(CustomArtworkRequestService customArtworkRequestService,
                                          QuotationService quotationService,
                                          AdminProductionService adminProductionService,
+                                         CustomAdvancePaymentService customAdvancePaymentService,
                                          CurrentUserService currentUserService) {
         this.customArtworkRequestService = customArtworkRequestService;
         this.quotationService = quotationService;
         this.adminProductionService = adminProductionService;
+        this.customAdvancePaymentService = customAdvancePaymentService;
         this.currentUserService = currentUserService;
     }
 
@@ -84,6 +95,40 @@ public class AdminCustomArtworkController {
         PageResponse<CustomArtworkRequestSummary> response =
                 customArtworkRequestService.adminListCustomRequests(status, page, size);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Retrieve complete custom-request detail for Admin workflow management.
+     *
+     * Method:  GET
+     * Path:    /api/v1/admin/custom-requests/{id}
+     * Auth:    ADMIN
+     * Success: 200 OK + CustomArtworkRequestResponse
+     * Errors:  401, 403, 404
+     */
+    @GetMapping("/api/v1/admin/custom-requests/{id}")
+    public ResponseEntity<CustomArtworkRequestResponse> adminGetCustomRequest(@PathVariable Long id) {
+        return ResponseEntity.ok(customArtworkRequestService.adminGetCustomRequest(id));
+    }
+
+    @GetMapping("/api/v1/admin/custom-requests/{requestId}/quotation")
+    public ResponseEntity<QuotationResponse> adminGetQuotationByRequestId(
+            @PathVariable Long requestId) {
+        return ResponseEntity.ok(quotationService.adminGetQuotationByRequestId(requestId));
+    }
+
+    @GetMapping("/api/v1/admin/custom-requests/{requestId}/payments")
+    public ResponseEntity<List<PaymentResponse>> adminGetPaymentsByRequestId(
+            @PathVariable Long requestId) {
+        return ResponseEntity.ok(
+                customAdvancePaymentService.adminGetCustomRequestPayments(requestId));
+    }
+
+    @GetMapping("/api/v1/admin/custom-requests/{requestId}/shipment")
+    public ResponseEntity<ShipmentResponse> adminGetShipmentByRequestId(
+            @PathVariable Long requestId) {
+        return ResponseEntity.ok(
+                adminProductionService.adminGetShipmentByRequestId(requestId));
     }
 
     /**
