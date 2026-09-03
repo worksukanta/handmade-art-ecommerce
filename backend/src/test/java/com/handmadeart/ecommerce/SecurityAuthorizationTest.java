@@ -10,6 +10,7 @@ import com.handmadeart.ecommerce.service.CheckoutService;
 import com.handmadeart.ecommerce.service.CatalogueService;
 import com.handmadeart.ecommerce.service.CurrentUserService;
 import com.handmadeart.ecommerce.service.CustomArtworkRequestService;
+import com.handmadeart.ecommerce.service.CustomOrderImageContentService;
 import com.handmadeart.ecommerce.service.OrderService;
 import com.handmadeart.ecommerce.service.PaymentService;
 import com.handmadeart.ecommerce.service.ProductImageContentService;
@@ -136,6 +137,15 @@ class SecurityAuthorizationTest {
 
     @MockitoBean
     private ProductImageContentService productImageContentService;
+
+    @MockitoBean
+    private CustomOrderImageContentService customOrderImageContentService;
+
+    @Test
+    void customRequestImageContent_withoutAuthentication_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/custom-request-images/1/content"))
+                .andExpect(status().isUnauthorized());
+    }
 
     // -------------------------------------------------------------------------
     // Test configuration

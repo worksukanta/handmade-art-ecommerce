@@ -17,6 +17,7 @@ public class CustomOrderImageResponse {
 
     private Long id;
     private Long customOrderRequestId;
+    private String imageUrl;
     private String storageReference;
     private String originalFilename;
     private String contentType;
@@ -31,6 +32,7 @@ public class CustomOrderImageResponse {
         CustomOrderImageResponse dto = new CustomOrderImageResponse();
         dto.id = image.getId();
         dto.customOrderRequestId = image.getCustomOrderRequest().getId();
+        dto.imageUrl = "/api/v1/custom-request-images/" + image.getId() + "/content";
         dto.storageReference = image.getStorageReference();
         dto.originalFilename = image.getOriginalFilename();
         dto.contentType = image.getContentType();
@@ -45,6 +47,7 @@ public class CustomOrderImageResponse {
 
     public Long getId() { return id; }
     public Long getCustomOrderRequestId() { return customOrderRequestId; }
+    public String getImageUrl() { return imageUrl; }
     public String getStorageReference() { return storageReference; }
     public String getOriginalFilename() { return originalFilename; }
     public String getContentType() { return contentType; }

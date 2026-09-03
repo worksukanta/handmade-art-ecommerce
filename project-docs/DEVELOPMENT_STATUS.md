@@ -932,6 +932,14 @@ Other gaps: 0
 - DEC-011 (frontend test runner): OPEN — blocks frontend testing
 - DEC-012 (E2E framework): OPEN — blocks E2E testing
 
+## Phase 4H correction pass — image storage and protected reference content
+
+- Product-image upload now resolves the configured root to an absolute, normalized path before `MultipartFile.transferTo(...)`; product directories and destinations are containment-checked. This fixes the relative-path mismatch that caused valid ADMIN multipart uploads to fail after directory creation.
+- Added authenticated `GET /api/v1/custom-request-images/{imageId}/content`. CUSTOMER access is limited to the owning request with non-disclosing 404 behavior for foreign images; ADMIN can read any reference image. Stored paths receive lexical and real-path containment checks, and responses preserve validated image Content-Type without exposing filesystem paths.
+- `CustomOrderImageResponse` supplies authoritative `imageUrl` while retaining existing fields for compatibility.
+- Focused image-content tests: 9 passed. Full backend suite: `mvn clean test` passed — 380 tests, 0 failures, 0 errors.
+- Runtime HTTP verification was unavailable because no configured application runtime and ADMIN credentials were available in this session.
+
 ## Next Recommended Task
 
 Backend administrative and regression review, then frontend initialization.

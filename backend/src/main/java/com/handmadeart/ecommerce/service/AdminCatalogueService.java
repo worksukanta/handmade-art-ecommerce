@@ -103,7 +103,7 @@ public class AdminCatalogueService {
             ProductRelatedRepository productRelatedRepository,
             InventoryRepository inventoryRepository) {
 
-        this.uploadRoot = Paths.get(uploadDir);
+        this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
@@ -392,11 +392,17 @@ public class AdminCatalogueService {
 
         // Generate a UUID-based server filename — never derived from the client-supplied name
         String serverFilename = UUID.randomUUID() + extension;
-        Path productDir = uploadRoot.resolve("product-" + productId);
+        Path productDir = uploadRoot.resolve("product-" + productId).normalize();
+        if (!productDir.startsWith(uploadRoot)) {
+            throw new IllegalArgumentException("Invalid product image storage path");
+        }
 
         try {
             Files.createDirectories(productDir);
-            Path destination = productDir.resolve(serverFilename);
+            Path destination = productDir.resolve(serverFilename).normalize();
+            if (!destination.startsWith(productDir)) {
+                throw new IllegalArgumentException("Invalid product image storage path");
+            }
             file.transferTo(destination.toFile());
         } catch (IOException ex) {
             log.error("Failed to store product image for product {}", productId, ex);
