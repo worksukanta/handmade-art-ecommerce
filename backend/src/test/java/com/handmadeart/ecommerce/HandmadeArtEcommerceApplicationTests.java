@@ -16,9 +16,15 @@ import com.handmadeart.ecommerce.repository.ProductRelatedRepository;
 import com.handmadeart.ecommerce.repository.ProductRepository;
 import com.handmadeart.ecommerce.repository.QuotationRepository;
 import com.handmadeart.ecommerce.repository.ShipmentRepository;
+import com.handmadeart.ecommerce.config.DevelopmentDataSeeder;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies that the Spring application context loads successfully
@@ -36,8 +42,22 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  * CustomAdvancePaymentService requires ShipmentRepository (Phase 3E.2).
  * AdminProductionService requires ShipmentRepository, CustomerOrderRepository (Phase 3E.2).
  */
-@SpringBootTest
+@SpringBootTest(properties = {
+        "app.seed.enabled=false",
+        "spring.servlet.multipart.max-file-size=10MB",
+        "spring.servlet.multipart.max-request-size=12MB"
+})
 class HandmadeArtEcommerceApplicationTests {
+
+    private final ApplicationContext applicationContext;
+    private final MultipartProperties multipartProperties;
+
+    @Autowired
+    HandmadeArtEcommerceApplicationTests(ApplicationContext applicationContext,
+                                          MultipartProperties multipartProperties) {
+        this.applicationContext = applicationContext;
+        this.multipartProperties = multipartProperties;
+    }
 
     @MockitoBean
     private AppUserRepository appUserRepository;
@@ -89,7 +109,9 @@ class HandmadeArtEcommerceApplicationTests {
 
     @Test
     void contextLoads() {
-        // If the Spring context starts without error, this test passes.
+        assertThat(applicationContext.getBeansOfType(DevelopmentDataSeeder.class)).isEmpty();
+        assertThat(multipartProperties.getMaxFileSize().toBytes()).isEqualTo(10L * 1024 * 1024);
+        assertThat(multipartProperties.getMaxRequestSize().toBytes()).isEqualTo(12L * 1024 * 1024);
     }
 
 }
