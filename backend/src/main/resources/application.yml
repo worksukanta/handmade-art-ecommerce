@@ -2,6 +2,13 @@ spring:
   application:
     name: handmade-art-ecommerce
 
+  # Infrastructure/development guardrails shared by all multipart endpoints.
+  # DEC-003 remains OPEN for the final business upload-size policy.
+  servlet:
+    multipart:
+      max-file-size: ${APP_MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${APP_MULTIPART_MAX_REQUEST_SIZE:12MB}
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/handmade_art_ecommerce}
     username: ${DB_USERNAME:handmadeart_user}

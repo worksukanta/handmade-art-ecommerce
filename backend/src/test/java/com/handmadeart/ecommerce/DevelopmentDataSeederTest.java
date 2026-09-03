@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -20,11 +21,15 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DevelopmentDataSeederTest {
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withUserConfiguration(DevelopmentDataSeeder.class);
 
     @TempDir Path tempDirectory;
     @Mock PasswordEncoder passwordEncoder;
@@ -35,6 +40,12 @@ class DevelopmentDataSeederTest {
     @Mock ProductRelatedRepository relatedRepository;
     @Mock ProductImageRepository imageRepository;
     @Mock ApplicationArguments arguments;
+
+    @Test
+    void absentEnabledProperty_doesNotRegisterSeederBean() {
+        contextRunner.run(context -> assertThat(context)
+                .doesNotHaveBean(DevelopmentDataSeeder.class));
+    }
 
     @Test
     void disabledSeeder_createsNothing() throws Exception {
@@ -125,6 +136,20 @@ class DevelopmentDataSeederTest {
         verify(relatedRepository, never()).save(any());
         verify(imageRepository, never()).save(any());
         verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    void enabledSeeder_nullSavedProductFailsWithDescriptiveMessage() {
+        when(userRepository.findByEmailIgnoreCase("admin@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("developer-secret")).thenReturn("encoded-secret");
+        when(categoryRepository.findByName(any())).thenReturn(Optional.empty());
+        when(categoryRepository.save(any())).thenAnswer(call -> withId(call.getArgument(0), 1L));
+        when(productRepository.findAll()).thenReturn(List.of());
+        when(productRepository.save(any())).thenReturn(null);
+
+        assertThatThrownBy(() -> seeder(true, "admin@example.com", "developer-secret").run(arguments))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Failed to resolve seeded product: Hand-Painted Botanical Denim Jacket");
     }
 
     private DevelopmentDataSeeder seeder(boolean enabled, String email, String password) {

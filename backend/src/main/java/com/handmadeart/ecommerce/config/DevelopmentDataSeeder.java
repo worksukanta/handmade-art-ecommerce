@@ -5,6 +5,7 @@ import com.handmadeart.ecommerce.repository.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.util.Locale;
 
 /** Explicitly enabled, idempotent local-development sample data. */
 @Component
+@ConditionalOnProperty(prefix = "app.seed", name = "enabled", havingValue = "true")
 public class DevelopmentDataSeeder implements ApplicationRunner {
 
     static final String PRODUCT_A = "Hand-Painted Botanical Denim Jacket";
@@ -124,7 +126,7 @@ public class DevelopmentDataSeeder implements ApplicationRunner {
     }
 
     private Product ensureProduct(String name, String description, String price, Category category, ProductType type) {
-        return productRepository.findAll().stream().filter(product -> name.equals(product.getName())).findFirst().orElseGet(() -> {
+        Product resolved = productRepository.findAll().stream().filter(product -> name.equals(product.getName())).findFirst().orElseGet(() -> {
             Product product = new Product();
             product.setName(name);
             product.setDescription(description);
@@ -134,9 +136,14 @@ public class DevelopmentDataSeeder implements ApplicationRunner {
             product.setStatus(ProductStatus.ACTIVE);
             return productRepository.save(product);
         });
+        if (resolved == null) {
+            throw new IllegalStateException("Failed to resolve seeded product: " + name);
+        }
+        return resolved;
     }
 
     private void ensureInventory(Product product, int quantity) {
+        if (product == null) throw new IllegalStateException("Failed to resolve seeded product for inventory");
         Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
         if (inventory == null) {
             Inventory created = new Inventory();
@@ -152,11 +159,13 @@ public class DevelopmentDataSeeder implements ApplicationRunner {
     }
 
     private void ensureRelated(Product product, Product related) {
+        if (product == null || related == null) throw new IllegalStateException("Failed to resolve seeded product relationship");
         ProductRelatedId id = new ProductRelatedId(product.getId(), related.getId());
         if (!relatedRepository.existsById(id)) relatedRepository.save(new ProductRelated(product, related));
     }
 
     private void ensureImage(Product product, String filename, String label, Color color, boolean primary) throws IOException {
+        if (product == null) throw new IllegalStateException("Failed to resolve seeded product for image: " + filename);
         List<ProductImage> existing = imageRepository.findByProductIdOrderByDisplayOrderAsc(product.getId());
         if (existing.stream().anyMatch(image -> filename.equals(image.getOriginalFilename()))) return;
 
