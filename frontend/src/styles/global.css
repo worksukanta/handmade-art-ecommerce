@@ -325,6 +325,8 @@ textarea:focus-visible,
 .request-card h2,
 .request-card p { margin: 0; }
 .request-card h2 { margin-bottom: 0.35rem; font-family: Georgia, serif; }
+.admin-request-card { grid-template-columns: minmax(0, 1.5fr) minmax(7rem, 0.5fr) minmax(12rem, 0.8fr) auto auto; }
+.admin-request-card > div > p { margin: 0; }
 .request-description { display: -webkit-box; overflow: hidden; color: #675d55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .custom-detail-heading .status-badge { margin-top: 0.5rem; }
 .custom-detail-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(17rem, 0.8fr); align-items: start; gap: 1.5rem; }
@@ -349,6 +351,21 @@ textarea:focus-visible,
 .workflow-timeline li.complete span { color: #fff; border-color: #537b67; background: #537b67; }
 .workflow-timeline li.current span { border-color: #9a4b34; background: #fff1e9; }
 .workflow-terminal { padding: 1rem; border-radius: 0.6rem; color: #702626; background: #fff0f0; }
+.admin-workflow-sidebar { display: grid; gap: 1.5rem; }
+.admin-workflow-sidebar .button { margin-top: 1rem; }
+.stacked-field,
+.stacked-form,
+.stacked-form label,
+.admin-form-grid label { display: grid; gap: 0.4rem; font-weight: 700; }
+.stacked-field textarea,
+.stacked-form input,
+.admin-form-grid input,
+.admin-form-grid textarea { width: 100%; padding: 0.625rem 0.75rem; border: 1px solid #777; border-radius: 0.4rem; font: inherit; }
+.stacked-form { gap: 0.85rem; }
+.stacked-form .button { justify-self: start; }
+.admin-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.admin-form-grid .full-field { grid-column: 1 / -1; }
+.admin-form-grid > .button { justify-self: start; }
 
 .form-field input[aria-invalid="true"] { border-color: #a32020; }
 .field-error { color: #8b1616; font-size: 0.875rem; }
@@ -401,10 +418,13 @@ textarea:focus-visible,
   .custom-request-form .form-field:last-of-type,
   .custom-request-form button[type="submit"] { grid-column: auto; }
   .request-card { grid-template-columns: 1fr; }
+  .admin-request-card { grid-template-columns: 1fr; }
   .custom-detail-grid { grid-template-columns: 1fr; }
   .custom-detail-grid > aside { position: static; }
   .request-details > div { grid-template-columns: 1fr; gap: 0.3rem; }
   .workflow-timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 1rem; }
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .admin-form-grid .full-field { grid-column: auto; }
 }
 
 @media (min-width: 40.001rem) and (max-width: 64rem) {
@@ -416,6 +436,7 @@ textarea:focus-visible,
   .order-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .order-card-action { justify-self: start; }
   .request-card { grid-template-columns: minmax(0, 1fr) auto; }
+  .admin-request-card { grid-template-columns: minmax(0, 1fr) auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

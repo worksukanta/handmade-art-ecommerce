@@ -19,6 +19,8 @@ import { OrdersPage } from '../pages/OrdersPage'
 import { CustomRequestDetailPage } from '../pages/CustomRequestDetailPage'
 import { CustomRequestsPage } from '../pages/CustomRequestsPage'
 import { NewCustomRequestPage } from '../pages/NewCustomRequestPage'
+import { AdminCustomRequestsPage } from '../pages/AdminCustomRequestsPage'
+import { AdminCustomRequestDetailPage } from '../pages/AdminCustomRequestDetailPage'
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +54,8 @@ export const router = createBrowserRouter([
             element: <RequireRole role="ADMIN" />,
             children: [
               { path: 'admin/products', element: <AdminAreaPage /> },
+              { path: 'admin/custom-requests', element: <AdminCustomRequestsPage /> },
+              { path: 'admin/custom-requests/:id', element: <AdminCustomRequestDetailPage /> },
             ],
           },
         ],

@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4F COMPLETED / CUSTOMER CUSTOM ARTWORK WORKFLOW INTEGRATED**
+- Frontend status: **PHASE 4G COMPLETED / ADMIN CUSTOM ARTWORK OPERATIONS INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
 - Frontend branch: `phase-4f-custom-artwork`
-- Current milestone: Phase 4F — Customer custom artwork workflow
-- `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and customer custom-artwork requests through quotation, advance payment, production, and shipment visibility
+- Current milestone: Phase 4G — Admin custom artwork operations
+- `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and the end-to-end customer/Admin custom-artwork workflow through delivery
 
 ## Approved frontend stack and setup facts
 
@@ -113,6 +113,23 @@
 - ADMIN dependency: admin review must transition the request to `UNDER_REVIEW` and create the single MVP quotation before customer quotation decision, advance payment, production, and shipment states can be exercised end-to-end. Database rows were not edited manually.
 - Backend/API blockers: none in the current fixed code. The running port-8080 process must be restarted before the frontend configured for that port can use the upload fix.
 - Decisions: DEC-001 provider integration remains DEFERRED; DEC-003 upload size limits remain OPEN; DEC-004 re-quotation remains DEFERRED; DEC-006 order cancellation remains OPEN; DEC-011 frontend test runner and DEC-012 E2E framework remain OPEN.
+
+## Phase 4G verification
+
+- Routes/navigation: protected ADMIN routes `/admin/custom-requests` and `/admin/custom-requests/:id`, plus distinct `Custom requests` and preserved `/admin/products` navigation entries.
+- Queue: `GET /admin/custom-requests?status=&page=&size=` with server-side status filtering and pagination; displays request/customer IDs, product type, description, status, submitted/updated timestamps, loading/empty/retry states, and detail navigation.
+- Detail discovery: `GET /admin/custom-requests/{id}` plus request-scoped `/quotation`, `/payments`, and `/shipment` reads. All submitted requirements, review information, timestamps, and reference-image metadata are shown. No filesystem path or fabricated image URL is rendered because no ADMIN image-content endpoint exists.
+- Review: exact `PATCH /admin/custom-requests/{id}/review` DTO `{decision: "ACCEPT"|"REJECT", notes?}`. REQUESTED exposes confirmed review start; UNDER_REVIEW exposes confirmed terminal rejection. Mutations prevent duplicate submission, refresh authoritative state, and contextualize stale-state 409 responses.
+- Quotation: exact `POST /admin/custom-requests/{id}/quotation` fields `quotedAmount`, `advanceAmount`, `estimatedDeliveryDate?`, `expiryAt`, and `notesTerms?`. The form requires positive quoted/fixed-advance amounts, prevents advance exceeding quoted amount, requires a future expiry, performs no percentage inference, and explains that the advance is fixed. Existing quotations remain read-only under DEC-004.
+- Customer decision/payment visibility: request-scoped quotation and payment reads expose authoritative quotation status, decision time, payment purpose/status/amount/method/timestamps. ADMIN receives no approve/reject controls on behalf of the customer.
+- Production: successful sandbox advance payment moves the request to IN_PRODUCTION. The UI exposes only the accepted ADMIN request transition `IN_PRODUCTION -> COMPLETED`; shipping/delivery progression uses shipment status operations.
+- Shipment: exact `POST /admin/shipments` DTO with `customOrderRequestId` and optional `carrierName`, `trackingReference`, `estimatedDeliveryDate`; request-scoped shipment retrieval; accepted `PATCH /admin/shipments/{id}/status` progression `PENDING -> SHIPPED -> DELIVERED`. No external carrier integration is implied.
+- Runtime integration: on a fresh backend at the configured main port, request `714` was registered/submitted with one reference image, found in the ADMIN queue, reviewed to UNDER_REVIEW, and quoted at 15000 with a fixed 5000 advance. The customer saw and approved the PENDING quotation, completed a successful 5000 SANDBOX advance payment, and the request reached IN_PRODUCTION. ADMIN observed one payment, marked production COMPLETED, created a PENDING shipment, and progressed it through SHIPPED to DELIVERED. CUSTOMER reads then returned DELIVERED request/shipment state and the authoritative tracking reference.
+- Browser verification: unavailable because no controllable in-app or extension browser was connected; runtime workflow verification used the same live HTTP contracts. No E2E framework was added while DEC-012 remains open.
+- Production build: `npm run build` - PASS.
+- Lint: `npm run lint` - PASS with no warnings.
+- Backend/API blockers: none for Phase 4G.
+- Remaining decisions: DEC-001, DEC-003, DEC-004, DEC-006, DEC-011, and DEC-012 retain their recorded status. Broader ADMIN catalogue/inventory management is not marked complete.
 
 ## Minimum frontend implementation map
 

@@ -9,5 +9,8 @@ export interface CustomArtworkRequestSummary { id: number; userId: number; produ
 export interface CustomArtworkRequest extends CustomArtworkRequestSummary { designTheme: string | null; preferredColors: string | null; dimensionsSize: string | null; budgetRange: string | null; requiredDeliveryDate: string | null; additionalInstructions: string | null; reviewedByUserId: number | null; reviewNotes: string | null; images: CustomOrderImage[] }
 export interface CustomRequestPage { content: CustomArtworkRequestSummary[]; page: number; size: number; total_elements: number; total_pages: number }
 export interface Quotation { id: number; customOrderRequestId: number; quotedAmount: number; advanceAmount: number | null; estimatedDeliveryDate: string | null; expiryAt: string; notesTerms: string | null; status: QuotationStatus; createdByUserId: number; createdAt: string; decidedAt: string | null }
+export interface CustomRequestReviewRequest { decision: 'ACCEPT' | 'REJECT'; notes?: string }
+export interface QuotationCreateRequest { quotedAmount: number; advanceAmount: number; estimatedDeliveryDate?: string; expiryAt: string; notesTerms?: string }
+export interface ShipmentCreateRequest { customOrderRequestId: number; carrierName?: string; trackingReference?: string; estimatedDeliveryDate?: string }
 
 export interface CustomRequestWorkflowData { request: CustomArtworkRequest; quotation: Quotation | null; payments: Payment[]; shipment: Shipment | null }
