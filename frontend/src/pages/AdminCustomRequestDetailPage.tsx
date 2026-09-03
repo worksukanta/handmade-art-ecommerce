@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { StatusBadge } from '../components/commerce/StatusBadge'
 import { WorkflowTimeline } from '../components/commerce/WorkflowTimeline'
+import { ReferenceImageList } from '../components/customArtwork/ReferenceImageList'
 import { ErrorState } from '../components/feedback/ErrorState'
 import { LoadingState } from '../components/feedback/LoadingState'
 import { customArtworkService } from '../services/customArtworkService'
@@ -62,7 +63,7 @@ function RequestPanel({ request }: { request: CustomArtworkRequest }) {
 }
 
 function ReferencePanel({ request }: { request: CustomArtworkRequest }) {
-  return <section className="detail-panel"><h2>Reference images</h2>{request.images.length ? <ul className="reference-file-list">{request.images.map((image) => <li key={image.id}><strong>{image.originalFilename}</strong><span>{image.contentType} · {formatBytes(image.fileSizeBytes)} · uploaded {formatDateTime(image.uploadedAt)}</span></li>)}</ul> : <p>No reference images were supplied.</p>}<p className="detail-note">Only safe file metadata is available; the backend does not expose an ADMIN image-content URL.</p></section>
+  return <section className="detail-panel"><h2>Reference images</h2>{request.images.length ? <ReferenceImageList images={request.images} /> : <p>No reference images were supplied.</p>}</section>
 }
 
 function ReviewPanel({ request, mutation, runAction }: { request: CustomArtworkRequest; mutation: Mutation; runAction: ActionRunner }) {
@@ -100,4 +101,3 @@ function ShipmentPanel({ request, shipment, mutation, runAction }: { request: Cu
 function ShipmentForm({ requestId, mutation, runAction }: { requestId: number; mutation: Mutation; runAction: ActionRunner }) { const [form, setForm] = useState({ carrierName: '', trackingReference: '', estimatedDeliveryDate: '' }); const submit = (event: FormEvent) => { event.preventDefault(); const payload: ShipmentCreateRequest = { customOrderRequestId: requestId, carrierName: form.carrierName.trim() || undefined, trackingReference: form.trackingReference.trim() || undefined, estimatedDeliveryDate: form.estimatedDeliveryDate || undefined }; void runAction('shipment', 'Create this internal shipment record?', () => customArtworkService.adminCreateShipment(payload), 'Shipment record created.') }; return <section className="detail-panel"><h2>Create shipment</h2><form className="stacked-form" onSubmit={submit}><label>Carrier (optional)<input value={form.carrierName} onChange={(event) => setForm({ ...form, carrierName: event.target.value })} /></label><label>Tracking reference (optional)<input value={form.trackingReference} onChange={(event) => setForm({ ...form, trackingReference: event.target.value })} /></label><label>Estimated delivery (optional)<input type="date" value={form.estimatedDeliveryDate} onChange={(event) => setForm({ ...form, estimatedDeliveryDate: event.target.value })} /></label><button className="button button-primary" disabled={mutation !== null} type="submit">{mutation === 'shipment' ? 'Creating…' : 'Create shipment'}</button></form></section> }
 
 type ActionRunner = (kind: Exclude<Mutation, null>, confirmation: string, action: () => Promise<unknown>, success: string) => Promise<void>
-function formatBytes(value: number) { if (value < 1024) return `${value} B`; return `${(value / 1024).toFixed(1)} KB` }

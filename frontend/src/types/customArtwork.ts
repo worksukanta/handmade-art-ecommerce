@@ -4,7 +4,7 @@ export type CustomRequestStatus = 'REQUESTED' | 'UNDER_REVIEW' | 'QUOTED' | 'CUS
 export type QuotationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
 
 export interface CustomArtworkRequestCreateRequest { productType: string; description: string; designTheme?: string; preferredColors?: string; dimensionsSize?: string; budgetRange?: string; requiredDeliveryDate?: string; additionalInstructions?: string }
-export interface CustomOrderImage { id: number; customOrderRequestId: number; storageReference: string; originalFilename: string; contentType: string; fileSizeBytes: number; uploadedAt: string }
+export interface CustomOrderImage { id: number; customOrderRequestId: number; imageUrl: string; storageReference: string; originalFilename: string; contentType: string; fileSizeBytes: number; uploadedAt: string }
 export interface CustomArtworkRequestSummary { id: number; userId: number; productType: string; description: string; status: CustomRequestStatus; createdAt: string; updatedAt: string }
 export interface CustomArtworkRequest extends CustomArtworkRequestSummary { designTheme: string | null; preferredColors: string | null; dimensionsSize: string | null; budgetRange: string | null; requiredDeliveryDate: string | null; additionalInstructions: string | null; reviewedByUserId: number | null; reviewNotes: string | null; images: CustomOrderImage[] }
 export interface CustomRequestPage { content: CustomArtworkRequestSummary[]; page: number; size: number; total_elements: number; total_pages: number }

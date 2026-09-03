@@ -2,7 +2,13 @@ import { createBrowserRouter } from 'react-router-dom'
 import { AppLayout } from '../components/layout/AppLayout'
 import { RequireAuth } from '../components/routing/RequireAuth'
 import { RequireRole } from '../components/routing/RequireRole'
-import { AdminAreaPage } from '../pages/AdminAreaPage'
+import { AdminProductsPage } from '../pages/AdminProductsPage'
+import { AdminProductFormPage } from '../pages/AdminProductFormPage'
+import { AdminProductDetailPage } from '../pages/AdminProductDetailPage'
+import { AdminCategoriesPage } from '../pages/AdminCategoriesPage'
+import { AdminInventoryPage } from '../pages/AdminInventoryPage'
+import { AdminOrdersPage } from '../pages/AdminOrdersPage'
+import { AdminOrderDetailPage } from '../pages/AdminOrderDetailPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { AddressesPage } from '../pages/AddressesPage'
 import { CartPage } from '../pages/CartPage'
@@ -53,7 +59,14 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole role="ADMIN" />,
             children: [
-              { path: 'admin/products', element: <AdminAreaPage /> },
+              { path: 'admin/products', element: <AdminProductsPage /> },
+              { path: 'admin/products/new', element: <AdminProductFormPage /> },
+              { path: 'admin/products/:id', element: <AdminProductDetailPage /> },
+              { path: 'admin/products/:id/edit', element: <AdminProductFormPage /> },
+              { path: 'admin/categories', element: <AdminCategoriesPage /> },
+              { path: 'admin/inventory', element: <AdminInventoryPage /> },
+              { path: 'admin/orders', element: <AdminOrdersPage /> },
+              { path: 'admin/orders/:id', element: <AdminOrderDetailPage /> },
               { path: 'admin/custom-requests', element: <AdminCustomRequestsPage /> },
               { path: 'admin/custom-requests/:id', element: <AdminCustomRequestDetailPage /> },
             ],

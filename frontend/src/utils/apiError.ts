@@ -50,6 +50,10 @@ export function normalizeApiError(error: unknown): NormalizedApiError {
       }
     }
 
+    if (error.response.status === 413) {
+      return { status: 413, message: 'The selected file is too large. Choose an image under 10 MB.', details: [] }
+    }
+
     return {
       status: error.response.status,
       message: 'The request could not be completed.',

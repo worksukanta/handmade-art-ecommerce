@@ -340,6 +340,11 @@ textarea:focus-visible,
 .reference-file-list { display: grid; gap: 0.75rem; margin: 1rem 0; padding: 0; list-style: none; }
 .reference-file-list li { display: grid; gap: 0.25rem; padding: 0.85rem; border: 1px solid #e1d8cf; border-radius: 0.65rem; }
 .reference-file-list span { color: #675d55; font-size: 0.88rem; }
+.reference-image-list li { grid-template-columns: 8rem minmax(0, 1fr); align-items: center; }
+.reference-image-list li > div { display: grid; gap: 0.25rem; min-width: 0; }
+.reference-image-preview,
+.reference-image-fallback { width: 8rem; aspect-ratio: 4 / 3; border-radius: 0.45rem; object-fit: cover; }
+.reference-image-fallback { display: grid; place-items: center; padding: 0.5rem; color: #675d55; background: #eee8e1; font-size: 0.78rem; text-align: center; }
 .upload-form { display: grid; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #ded4c9; }
 .upload-form label { font-weight: 700; }
 .upload-form button { justify-self: start; }
@@ -387,6 +392,32 @@ textarea:focus-visible,
 .form-alert-error { color: #741313; background: #fff0f0; }
 .form-alert-success { color: #175b2c; background: #effaf2; }
 
+.admin-section-links { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-block: 1rem 1.5rem; }
+.admin-table-wrap { overflow-x: auto; margin-top: 1.25rem; border: 1px solid #ded4c9; border-radius: 0.75rem; background: #fff; }
+.admin-table { width: 100%; min-width: 46rem; border-collapse: collapse; }
+.admin-table th,
+.admin-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #ebe4dc; text-align: left; vertical-align: middle; }
+.admin-table th { color: #514a44; background: #f8f4ef; font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.admin-table tbody tr:last-child td { border-bottom: 0; }
+.admin-table td:last-child { white-space: nowrap; }
+.admin-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.admin-detail-grid > :last-child { grid-column: 1 / -1; }
+.admin-image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 1rem; }
+.admin-image-grid article { display: grid; align-content: start; gap: 0.45rem; padding: 0.75rem; border: 1px solid #e1d8cf; border-radius: 0.65rem; }
+.admin-image-grid p { margin: 0; overflow-wrap: anywhere; }
+.admin-product-image { width: 100%; aspect-ratio: 1; border-radius: 0.45rem; object-fit: cover; }
+.simple-list { display: grid; gap: 0.65rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.simple-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.65rem; border-bottom: 1px solid #ebe4dc; }
+.inline-controls { display: flex; align-items: stretch; gap: 0.65rem; }
+.inline-controls select,
+.admin-form-grid select,
+.catalogue-filters select { min-height: 2.65rem; padding: 0.55rem 0.7rem; border: 1px solid #988b80; border-radius: 0.45rem; background: #fff; font: inherit; }
+.inline-controls select { flex: 1; min-width: 0; }
+.status-generic { color: #43382f; background: #eee6dc; }
+.status-active { color: #175b2c; background: #e5f5ea; }
+.status-inactive,
+.status-cancelled { color: #741313; background: #fff0f0; }
+
 @media (max-width: 40rem) {
   .app-header { align-items: flex-start; flex-direction: column; }
   .nav-list { flex-wrap: wrap; }
@@ -422,9 +453,15 @@ textarea:focus-visible,
   .custom-detail-grid { grid-template-columns: 1fr; }
   .custom-detail-grid > aside { position: static; }
   .request-details > div { grid-template-columns: 1fr; gap: 0.3rem; }
+  .reference-image-list li { grid-template-columns: 1fr; }
+  .reference-image-preview,
+  .reference-image-fallback { width: 100%; max-width: 20rem; }
   .workflow-timeline { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 1rem; }
   .admin-form-grid { grid-template-columns: 1fr; }
   .admin-form-grid .full-field { grid-column: auto; }
+  .admin-detail-grid { grid-template-columns: 1fr; }
+  .admin-detail-grid > :last-child { grid-column: auto; }
+  .inline-controls { align-items: stretch; flex-direction: column; }
 }
 
 @media (min-width: 40.001rem) and (max-width: 64rem) {

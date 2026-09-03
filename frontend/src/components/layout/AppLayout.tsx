@@ -37,7 +37,8 @@ export function AppLayout() {
             {!isInitializing && user?.role === 'ADMIN' && (
               <>
                 <li><Link to="/admin/custom-requests">Custom requests</Link></li>
-                <li><Link to="/admin/products">Admin products</Link></li>
+                <li><Link to="/admin/products">Products</Link></li>
+                <li><Link to="/admin/orders">Orders</Link></li>
               </>
             )}
             {!isInitializing && isAuthenticated && (

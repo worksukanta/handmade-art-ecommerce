@@ -7,6 +7,7 @@ export const customArtworkService = {
   async list(page = 0, size = 20, status?: CustomRequestStatus): Promise<CustomRequestPage> { return (await apiClient.get<CustomRequestPage>('/custom-requests', { params: { page, size, status } })).data },
   async get(id: number): Promise<CustomArtworkRequest> { return (await apiClient.get<CustomArtworkRequest>(`/custom-requests/${id}`)).data },
   async uploadImage(id: number, file: File): Promise<CustomOrderImage> { const data = new FormData(); data.append('file', file); return (await apiClient.post<CustomOrderImage>(`/custom-requests/${id}/images`, data)).data },
+  async getImageContent(imageUrl: string): Promise<Blob> { return (await apiClient.get<Blob>(imageUrl, { responseType: 'blob' })).data },
   async getQuotation(id: number): Promise<Quotation> { return (await apiClient.get<Quotation>(`/custom-requests/${id}/quotation`)).data },
   async approveQuotation(id: number): Promise<Quotation> { return (await apiClient.post<Quotation>(`/quotations/${id}/approve`)).data },
   async rejectQuotation(id: number): Promise<Quotation> { return (await apiClient.post<Quotation>(`/quotations/${id}/reject`)).data },

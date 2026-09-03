@@ -1,0 +1,19 @@
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { FormError } from '../components/forms/FormError'
+import { SubmitButton } from '../components/forms/SubmitButton'
+import { LoadingState } from '../components/feedback/LoadingState'
+import { adminCommerceService } from '../services/adminCommerceService'
+import type { AdminCategory, ProductRequest } from '../types/admin'
+import { normalizeApiError } from '../utils/apiError'
+
+const blank: ProductRequest = { name: '', description: null, price: 0, category_id: 0, product_type: 'READY_MADE', status: 'INACTIVE' }
+export function AdminProductFormPage() {
+  const { id } = useParams(); const productId = Number(id); const editing = Number.isInteger(productId) && productId > 0; const navigate = useNavigate()
+  const [form, setForm] = useState(blank); const [categories, setCategories] = useState<AdminCategory[]>([]); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null)
+  useEffect(() => { void (async () => { try { const cats = await adminCommerceService.listCategories(); setCategories(cats); if (editing) { const p = await adminCommerceService.getProduct(productId); setForm({ name:p.name, description:p.description, price:p.price, category_id:p.category_id, product_type:p.product_type, status:p.status }) } else if (cats.length) setForm(v => ({ ...v, category_id: cats[0].id })) } catch (e) { setError(normalizeApiError(e).message) } finally { setLoading(false) } })() }, [editing, productId])
+  const submit = async (event: FormEvent) => { event.preventDefault(); setSaving(true); setError(null); try { const result = editing ? await adminCommerceService.updateProduct(productId, form) : await adminCommerceService.createProduct(form); navigate(`/admin/products/${result.id}`, { state: editing ? undefined : { productCreated: true } }) } catch (e) { setError(normalizeApiError(e).message) } finally { setSaving(false) } }
+  if (loading) return <LoadingState label="Loading product editor" />
+  return <section className="commerce-page narrow-form-page"><Link className="back-link" to={editing ? `/admin/products/${productId}` : '/admin/products'}>← Back</Link><div className="page-heading"><p className="eyebrow">Admin catalogue</p><h1>{editing ? 'Edit product' : 'Create product'}</h1></div><form className="commerce-form admin-form-grid" onSubmit={submit}>{error && <div className="full-field"><FormError message={error} /></div>}<label>Name<input required maxLength={200} value={form.name} onChange={e => setForm({...form,name:e.target.value})} /></label><label>Price<input required min="0" step="0.01" type="number" value={form.price} onChange={e => setForm({...form,price:Number(e.target.value)})} /></label><label>Category<select required value={form.category_id} onChange={e => setForm({...form,category_id:Number(e.target.value)})}>{categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.status})</option>)}</select></label><label>Product type<select value={form.product_type} onChange={e => setForm({...form,product_type:e.target.value as ProductRequest['product_type']})}><option value="READY_MADE">Ready made</option><option value="CUSTOM_AVAILABLE">Custom available</option><option value="PORTFOLIO_ONLY">Portfolio only</option></select></label><label>Status<select value={form.status} onChange={e => setForm({...form,status:e.target.value as ProductRequest['status']})}><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label><label className="full-field">Description<textarea rows={6} value={form.description ?? ''} onChange={e => setForm({...form,description:e.target.value || null})} /></label><SubmitButton isSubmitting={saving} idleLabel={editing ? 'Save product' : 'Create product'} submittingLabel="Saving…" /></form></section>
+}

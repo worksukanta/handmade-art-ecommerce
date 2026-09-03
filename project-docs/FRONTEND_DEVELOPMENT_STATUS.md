@@ -218,6 +218,31 @@
 - The UI/UX specification mentions `PUT /admin/shipments/{id}`, while the accepted backend exposes shipment creation as `POST /api/v1/admin/shipments` and status updates as `PATCH /api/v1/admin/shipments/{id}/status`; frontend implementation must follow the frozen REST/backend contract.
 - Historical development-status entries may still describe frontend initialization as pending; this file is the current frontend-specific status through Phase 4B.
 
+## Phase 4H — Admin catalogue, inventory, and standard-order operations
+
+- Routes: added ADMIN-only `/admin/products`, `/admin/products/new`, `/admin/products/:id`, `/admin/products/:id/edit`, `/admin/categories`, `/admin/inventory`, `/admin/orders`, and `/admin/orders/:id` routes behind the existing role guard. Admin navigation now links Products, Custom Requests, and Orders; catalogue pages provide contextual Categories and Inventory links.
+- Products: paginated all-status list, detail, create, edit, ACTIVE/INACTIVE updates, exact product-type selection, category assignment, price, and description editing. Writes use accepted ADMIN DTOs and refresh authoritative server state.
+- Categories: all-status list plus create, update, and ACTIVE/INACTIVE operations. The backend has no hierarchy or delete endpoint, so neither is represented.
+- Images: multipart upload and deletion from product detail. The UI displays response metadata and resolves only the backend-provided public `imageUrl`; it does not display storage references. The backend exposes no ordering or primary-image mutation.
+- Related products: view, add, and remove through the accepted replacement endpoint. Already-related products are excluded and mutations prevent repeat submission.
+- Inventory: paginated authoritative quantity display and non-negative whole-number replacement through `/admin/inventory/{productId}`. Product updates are not used to alter stock.
+- Standard orders: paginated list and detail with customer, item snapshots, delivery-address snapshot, totals, payments, and shipment. Only accepted transitions are offered (`PENDING_PAYMENT -> CONFIRMED -> PROCESSING -> SHIPPED -> DELIVERED`); cancellation remains absent under DEC-006. Mutations confirm progression, disable repeat submission, refresh server state, and contextualize HTTP 409 conflicts.
+- Shipments: create with optional carrier, tracking reference, and estimated delivery; progress through `PENDING -> SHIPPED -> DELIVERED`. No external carrier integration is implied under DEC-008.
+- Runtime verification: not completed because no backend responded on configured `localhost:8080` and no ADMIN runtime credentials were available. The database was not edited and no state was forced. The requested end-to-end journey remains pending an available application runtime.
+- Production build: `npm run build` — PASS.
+- Lint: `npm run lint` — PASS; the configured linter exits successfully with React effect-pattern warnings in asynchronous loading pages. No test or E2E framework was added while DEC-011 and DEC-012 remain open.
+- Backend/API blockers: none in the accepted Phase 4H discovery-read contract. Image ordering/primary mutation, order cancellation, and external carrier behavior are intentionally unavailable rather than frontend blockers.
+- Remaining decisions: DEC-001, DEC-003, DEC-006, DEC-007, DEC-008, DEC-009, DEC-010, DEC-011, and DEC-012 retain their recorded status.
+
+## Phase 4H correction pass — UX and image uploads
+
+- Filter stability diagnosis: ADMIN Products, Inventory, Orders, and Categories expose pagination but their accepted contracts have no search/filter parameters or Search/Clear controls. ADMIN Custom Requests has one immediately-applied status select and no redundant Search/Clear actions. No unstable object dependencies or duplicate query-param writes were present. The six lint warnings identify loader invocation from effects; they are not repeated-action handlers and were not the source of the reported flashing. Unsupported filters were not invented.
+- Product-image upload: frontend already used exact `POST /admin/products/{id}/images`, field `file`, browser-managed multipart boundaries. The backend upload root remained relative, making `transferTo(...)` target a different location from the directory created by NIO. Storage resolution is now absolute, normalized, and containment-checked. HTTP 413 receives a specific under-10-MB message while structured errors retain centralized normalization.
+- Reference images: CUSTOMER and ADMIN details fetch authoritative protected `imageUrl` values as authenticated blobs, render responsive thumbnails with alt text and fallback, retain metadata, and offer safe full-size viewing. No URL is derived from `storageReference`.
+- Product creation: successful creation navigates directly to the new product detail route with image-upload guidance and the corrected upload/display/delete section.
+- Frontend build: `npm run build` — PASS. Lint: `npm run lint` — PASS with six investigated `react(set-state-in-effect)` warnings and no errors.
+- Runtime verification: unavailable because no backend responded at `localhost:8080` and no ADMIN runtime credentials were available. Interactive browser workflows remain pending a runnable environment.
+
 ## Next recommended task
 
 Begin Phase 4G — Admin Catalogue & Inventory. Keep DEC-001, DEC-002, DEC-003, DEC-004, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
