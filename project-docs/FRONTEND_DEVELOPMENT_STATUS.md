@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4D COMPLETED / CUSTOMER COMMERCE INTEGRATED**
+- Frontend status: **PHASE 4E COMPLETED / ORDERS, PAYMENTS & SHIPMENT TRACKING INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-4d-customer-commerce`
-- Current milestone: Phase 4D — Cart, profile, addresses, and checkout
-- `frontend/` state: Vite React + TypeScript application covering public browsing and authenticated customer commerce through order creation
+- Frontend branch: `phase-4e-orders-payments`
+- Current milestone: Phase 4E — Orders, payments, and shipment tracking
+- `frontend/` state: Vite React + TypeScript application covering public browsing and authenticated customer commerce through post-checkout order/payment/tracking
 
 ## Approved frontend stack and setup facts
 
@@ -77,6 +77,24 @@
 - Backend/API defects: none discovered
 - DEC-010 remains DEFERRED; checkout never silently chooses an address
 - DEC-011 and DEC-012 remain OPEN
+
+## Phase 4E verification
+
+- Routes/navigation: protected CUSTOMER `/orders` and `/orders/:id` routes, plus an Orders entry in authenticated customer navigation
+- Order history: paginated `GET /orders?page=&size=` integration with authoritative ID/date/recipient/location/total/status data, responsive cards, empty state, retryable error state, and detail navigation
+- Order detail: `GET /orders/{id}` integration displaying purchase-time item name/price/quantity/line-total snapshots, address snapshot, authoritative subtotal/total, order status, and timestamps
+- Payments: `GET /orders/{id}/payments` status/history and `POST /orders/{id}/payments` initiation using only `{paymentMethod: "SANDBOX"}`; amount remains backend-derived and payment action appears only for `PENDING_PAYMENT` orders
+- Payment outcomes: actual `PENDING`, `SUCCESS`, or `FAILED` response status is displayed; duplicate submission is disabled and 409 `ORDER_NOT_PAYABLE` is presented as a contextual business conflict followed by an order/payment refresh
+- Shipment: `GET /orders/{id}/shipment` displays backend carrier, tracking reference, status, estimated delivery date, shipped/delivered timestamps; a 404 is treated as the normal not-yet-created state without disabling order details
+- Checkout success: `/checkout/success/:orderId` now links to the authoritative order detail/payment view, survives refresh without navigation state, and never equates order creation with payment success
+- Status models: exact backend order (`PENDING_PAYMENT`, `CONFIRMED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`), payment (`PENDING`, `SUCCESS`, `FAILED`), payment-purpose (`FULL`, `ADVANCE`, `REMAINING`), and shipment (`PENDING`, `SHIPPED`, `DELIVERED`) enums are typed and humanized without changing semantics
+- Error/loading/accessibility: independent page/payment/shipment loading and error states, normalized API failures, semantic sections/lists/definition lists/time elements, textual status badges, labelled actions, focus-visible behavior, and responsive layouts
+- Production build: `npm run build` — PASS
+- Lint: `npm run lint` — PASS with no warnings
+- Frontend automated tests: not added because DEC-011 remains open and no runner is configured
+- Runtime integration: not performed during this phase; build-time contract integration was verified against frozen controllers, DTOs, enums, services, and controller tests
+- Backend/API defects: none discovered
+- Blocked: order cancellation remains excluded while DEC-006 is OPEN; external/provider callback payment integration remains excluded while DEC-001 is DEFERRED
 
 ## Minimum frontend implementation map
 
@@ -167,4 +185,4 @@
 
 ## Next recommended task
 
-Begin Phase 4E — Orders & Payments. Keep DEC-001, DEC-002, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
+Begin Phase 4F — Customer Custom Artwork Workflow. Keep DEC-001, DEC-002, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.

@@ -14,6 +14,8 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { UnauthorizedPage } from '../pages/UnauthorizedPage'
 import { ProductDetailPage } from '../pages/ProductDetailPage'
+import { OrderDetailPage } from '../pages/OrderDetailPage'
+import { OrdersPage } from '../pages/OrdersPage'
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +38,8 @@ export const router = createBrowserRouter([
               { path: 'account/addresses', element: <AddressesPage /> },
               { path: 'checkout', element: <CheckoutPage /> },
               { path: 'checkout/success/:orderId', element: <CheckoutSuccessPage /> },
+              { path: 'orders', element: <OrdersPage /> },
+              { path: 'orders/:id', element: <OrderDetailPage /> },
             ],
           },
           {
