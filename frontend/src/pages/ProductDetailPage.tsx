@@ -58,6 +58,7 @@ export function ProductDetailPage() {
   }, [hasInvalidProductId, productId, requestVersion])
   const images = useMemo(() => orderedImages(product?.images ?? []), [product])
   const selectedImage = images.find((image) => image.id === selectedImageId) ?? images[0]
+  const customRequestSearch = new URLSearchParams({ productType: product?.name ?? '', inspiration: product?.name ?? '' }).toString()
 
   if (hasInvalidProductId) {
     return <ErrorState title="Product not available" message="This product address is invalid." action={<Link className="button button-secondary state-link" to="/">Return to catalogue</Link>} />
@@ -97,7 +98,7 @@ export function ProductDetailPage() {
             {product.product_type === 'READY_MADE' && product.availability.in_stock && user?.role !== 'ADMIN' && <div className="add-cart-controls"><label htmlFor="product-quantity">Quantity</label><input id="product-quantity" type="number" min="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} />{isAuthenticated ? <button className="button button-primary" type="button" disabled={isAdding} onClick={() => { setIsAdding(true); setCartMessage(null); void addItem(product.id, quantity).then(() => setCartMessage('Added to your cart.')).catch((cause: unknown) => setCartMessage(normalizeApiError(cause).message)).finally(() => setIsAdding(false)) }}>{isAdding ? 'Adding…' : 'Add to cart'}</button> : <Link className="button button-primary" to="/login" state={{ from: location }}>Sign in to add to cart</Link>}</div>}
             {cartMessage && <p className="form-alert" role="status">{cartMessage}</p>}
             {product.product_type === 'READY_MADE' && !product.availability.in_stock && <p>This ready-made piece is currently unavailable.</p>}
-            {product.product_type === 'CUSTOM_AVAILABLE' && <p>This work is available through the custom artwork request process. Online custom requests are coming in a later phase.</p>}
+            {product.product_type === 'CUSTOM_AVAILABLE' && user?.role !== 'ADMIN' && <div><p>This work can inspire a standalone custom artwork request. The request contract does not persist a catalogue product link.</p>{isAuthenticated ? <Link className="button button-primary" to={`/custom-requests/new?${customRequestSearch}`}>Request custom artwork</Link> : <Link className="button button-primary" to="/login" state={{ from: { ...location, pathname: '/custom-requests/new', search: `?${customRequestSearch}` } }}>Sign in to request custom artwork</Link>}</div>}
             {product.product_type === 'PORTFOLIO_ONLY' && <p>This piece is presented as part of the artist’s portfolio and is not available for standard purchase.</p>}
           </div>
         </section>

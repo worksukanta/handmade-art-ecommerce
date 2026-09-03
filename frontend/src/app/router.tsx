@@ -16,6 +16,9 @@ import { UnauthorizedPage } from '../pages/UnauthorizedPage'
 import { ProductDetailPage } from '../pages/ProductDetailPage'
 import { OrderDetailPage } from '../pages/OrderDetailPage'
 import { OrdersPage } from '../pages/OrdersPage'
+import { CustomRequestDetailPage } from '../pages/CustomRequestDetailPage'
+import { CustomRequestsPage } from '../pages/CustomRequestsPage'
+import { NewCustomRequestPage } from '../pages/NewCustomRequestPage'
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +43,9 @@ export const router = createBrowserRouter([
               { path: 'checkout/success/:orderId', element: <CheckoutSuccessPage /> },
               { path: 'orders', element: <OrdersPage /> },
               { path: 'orders/:id', element: <OrderDetailPage /> },
+              { path: 'custom-requests', element: <CustomRequestsPage /> },
+              { path: 'custom-requests/new', element: <NewCustomRequestPage /> },
+              { path: 'custom-requests/:id', element: <CustomRequestDetailPage /> },
             ],
           },
           {

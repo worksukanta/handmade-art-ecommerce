@@ -29,6 +29,7 @@ export function AppLayout() {
               <>
                 <li><Link to="/cart">Cart{itemCount > 0 ? ` (${itemCount})` : ''}</Link></li>
                 <li><Link to="/orders">Orders</Link></li>
+                <li><Link to="/custom-requests">Custom requests</Link></li>
                 <li><Link to="/account/addresses">Addresses</Link></li>
                 <li><Link to="/account/profile">Profile</Link></li>
               </>

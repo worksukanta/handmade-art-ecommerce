@@ -2,11 +2,11 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4E COMPLETED / ORDERS, PAYMENTS & SHIPMENT TRACKING INTEGRATED**
+- Frontend status: **PHASE 4F COMPLETED / CUSTOMER CUSTOM ARTWORK WORKFLOW INTEGRATED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-4e-orders-payments`
-- Current milestone: Phase 4E — Orders, payments, and shipment tracking
-- `frontend/` state: Vite React + TypeScript application covering public browsing and authenticated customer commerce through post-checkout order/payment/tracking
+- Frontend branch: `phase-4f-custom-artwork`
+- Current milestone: Phase 4F — Customer custom artwork workflow
+- `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and customer custom-artwork requests through quotation, advance payment, production, and shipment visibility
 
 ## Approved frontend stack and setup facts
 
@@ -95,6 +95,24 @@
 - Runtime integration: not performed during this phase; build-time contract integration was verified against frozen controllers, DTOs, enums, services, and controller tests
 - Backend/API defects: none discovered
 - Blocked: order cancellation remains excluded while DEC-006 is OPEN; external/provider callback payment integration remains excluded while DEC-001 is DEFERRED
+
+## Phase 4F verification
+
+- Routes/navigation: protected CUSTOMER routes `/custom-requests`, `/custom-requests/new`, and `/custom-requests/:id`, plus a customer navigation entry and catalogue entry point for `CUSTOM_AVAILABLE` products. Anonymous catalogue users retain the requested destination through the existing login-return flow; `READY_MADE` cart behavior and `PORTFOLIO_ONLY` non-purchasability remain unchanged.
+- Request creation: exact `POST /custom-requests` DTO fields (`productType`, `description`, optional `designTheme`, `preferredColors`, `dimensionsSize`, `budgetRange`, `requiredDeliveryDate`, and `additionalInstructions`) with accessible validation, normalized errors, and duplicate-submit prevention. Catalogue products provide inspiration text only because the backend request contract has no product ID relationship.
+- History/detail: paginated and status-filtered `GET /custom-requests`, owned `GET /custom-requests/{id}`, complete request fields, reference-image metadata, request status badge, and a state-oriented workflow timeline covering every accepted request status without invented timestamps or percentages.
+- Reference images: `POST /custom-requests/{id}/images` using `multipart/form-data` field `file`; selected filename, independent upload state, success/error feedback, and refreshed backend metadata. The backend permits repeated uploads for an owned request and exposes no customer image-content URL, so the frontend does not construct filesystem URLs or render unsafe previews.
+- Quotation: `GET /custom-requests/{id}/quotation`, `POST /quotations/{id}/approve`, and `POST /quotations/{id}/reject`. Exact quoted/advance amounts, expiry, estimated delivery, notes/terms, and status are shown. Decision buttons appear only for a non-expired `PENDING` quotation on a `QUOTED` request; approval and rejection use separate confirmed mutations and refresh authoritative state. No rejection body or re-quotation behavior is invented.
+- Advance payment: `GET/POST /custom-requests/{id}/payments`; the only request field is `{paymentMethod: "SANDBOX"}`. Payment appears only for an `APPROVED` request without a successful ADVANCE payment, displays the stored quotation advance amount as read-only, and presents the returned payment status/history. No card data, percentage inference, or provider-specific UI is used.
+- Shipment: `GET /custom-requests/{id}/shipment` is custom-request-specific. Carrier, tracking reference, status, estimated date, shipped time, and delivered time are displayed when supplied. A missing shipment is treated as normal and does not blank the request detail.
+- Loading/errors/accessibility: independent page, quotation, image-upload, payment, and shipment states; retryable primary failures; section-scoped related-data errors; refreshed authoritative data after workflow conflicts; semantic headings, lists, definition lists, labels, status text, time elements, keyboard controls, and responsive layouts.
+- Production build: `npm run build` — PASS.
+- Lint: `npm run lint` — PASS with no warnings.
+- Frontend automated tests: not added because DEC-011 remains open and no test runner is configured.
+- Runtime integration: against the fixed backend on port 8081, CUSTOMER registration/login, request creation, history listing, owned detail retrieval, and a valid PNG reference upload were verified. Request `710` remained `REQUESTED`; upload returned 201, persisted image metadata, appeared in detail, and wrote the physical file under the configured root. Browser-driven visual verification was unavailable because no controllable browser was connected. The stale backend process already listening on port 8080 still ran pre-fix code and returned 500 for the same upload.
+- ADMIN dependency: admin review must transition the request to `UNDER_REVIEW` and create the single MVP quotation before customer quotation decision, advance payment, production, and shipment states can be exercised end-to-end. Database rows were not edited manually.
+- Backend/API blockers: none in the current fixed code. The running port-8080 process must be restarted before the frontend configured for that port can use the upload fix.
+- Decisions: DEC-001 provider integration remains DEFERRED; DEC-003 upload size limits remain OPEN; DEC-004 re-quotation remains DEFERRED; DEC-006 order cancellation remains OPEN; DEC-011 frontend test runner and DEC-012 E2E framework remain OPEN.
 
 ## Minimum frontend implementation map
 
@@ -185,4 +203,4 @@
 
 ## Next recommended task
 
-Begin Phase 4F — Customer Custom Artwork Workflow. Keep DEC-001, DEC-002, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
+Begin Phase 4G — Admin Catalogue & Inventory. Keep DEC-001, DEC-002, DEC-003, DEC-004, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
