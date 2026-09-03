@@ -51,15 +51,23 @@ export function CataloguePage() {
       .catch(() => setCategoryError(true))
   }, [])
 
+  const searchParamsEqual = (a: URLSearchParams, b: URLSearchParams): boolean => {
+    const aEntries = [...a.entries()].sort((x, y) => x[0].localeCompare(y[0]))
+    const bEntries = [...b.entries()].sort((x, y) => x[0].localeCompare(y[0]))
+    if (aEntries.length !== bEntries.length) return false
+    return aEntries.every(([k, v], i) => k === bEntries[i][0] && v === bEntries[i][1])
+  }
+
   const updateFilters = (updates: Record<string, string | undefined>) => {
-    setIsLoading(true)
-    setError(null)
     const next = new URLSearchParams(searchParams)
     for (const [key, value] of Object.entries(updates)) {
       if (value) next.set(key, value)
       else next.delete(key)
     }
     if (!Object.hasOwn(updates, 'page')) next.delete('page')
+    if (searchParamsEqual(next, searchParams)) return
+    setIsLoading(true)
+    setError(null)
     setSearchParams(next)
   }
 
@@ -69,10 +77,12 @@ export function CataloguePage() {
   }
 
   const clearFilters = () => {
+    const next = new URLSearchParams()
+    if (searchParamsEqual(next, searchParams) && searchInput === '') return
     setIsLoading(true)
     setError(null)
     setSearchInput('')
-    setSearchParams({})
+    setSearchParams(next)
   }
 
   return (

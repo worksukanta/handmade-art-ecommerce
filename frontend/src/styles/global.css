@@ -418,6 +418,88 @@ textarea:focus-visible,
 .status-inactive,
 .status-cancelled { color: #741313; background: #fff0f0; }
 
+/* Lightbox Modal */
+.lightbox-trigger-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+  border-radius: 0.45rem;
+  overflow: hidden;
+  text-align: left;
+}
+.lightbox-trigger-button:focus-visible {
+  outline: 3px solid #d68a55;
+  outline-offset: 3px;
+}
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(2px);
+}
+.lightbox-dialog {
+  position: relative;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  max-width: min(90vw, 52rem);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+.lightbox-close-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lightbox-close-button:hover,
+.lightbox-close-button:focus-visible {
+  background: rgba(0, 0, 0, 0.85);
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+.lightbox-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: auto;
+  padding: 1rem;
+}
+.lightbox-image {
+  max-width: 100%;
+  max-height: calc(85vh - 4rem);
+  object-fit: contain;
+  border-radius: 0.35rem;
+}
+.lightbox-caption {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.9rem;
+  color: #575047;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 40rem) {
   .app-header { align-items: flex-start; flex-direction: column; }
   .nav-list { flex-wrap: wrap; }

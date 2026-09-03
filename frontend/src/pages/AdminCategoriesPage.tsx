@@ -21,7 +21,7 @@ export function AdminCategoriesPage() {
     catch (cause) { setError(normalizeApiError(cause).message) }
     finally { setLoading(false) }
   }, [])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { void Promise.resolve().then(load) }, [load])
   const resetForm = () => { setEditing(null); setName(''); setDescription('') }
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(null)

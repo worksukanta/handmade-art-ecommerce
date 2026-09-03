@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { ProductCard } from '../components/catalogue/ProductCard'
 import { ProductImage } from '../components/catalogue/ProductImage'
+import { ImageLightbox } from '../components/common/ImageLightbox'
 import { ErrorState } from '../components/feedback/ErrorState'
 import { LoadingState } from '../components/feedback/LoadingState'
-import { catalogueService } from '../services/catalogueService'
+import { catalogueService, resolveImageUrl } from '../services/catalogueService'
 import type { ProductDetail, ProductImage as ProductImageType } from '../types/catalogue'
 import { normalizeApiError } from '../utils/apiError'
 import { useAuth } from '../hooks/useAuth'
@@ -38,6 +39,7 @@ export function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [cartMessage, setCartMessage] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     let isCurrent = true
@@ -56,6 +58,7 @@ export function ProductDetailPage() {
       .finally(() => { if (isCurrent) setIsLoading(false) })
     return () => { isCurrent = false }
   }, [hasInvalidProductId, productId, requestVersion])
+
   const images = useMemo(() => orderedImages(product?.images ?? []), [product])
   const selectedImage = images.find((image) => image.id === selectedImageId) ?? images[0]
   const customRequestSearch = new URLSearchParams({ productType: product?.name ?? '', inspiration: product?.name ?? '' }).toString()
@@ -71,12 +74,26 @@ export function ProductDetailPage() {
     return <ErrorState title="We couldn’t load this product" message={error?.message ?? 'Please try again.'} onRetry={() => { setIsLoading(true); setError(null); setRequestVersion((version) => version + 1) }} />
   }
 
+  const lightboxUrl = selectedImage?.imageUrl ? resolveImageUrl(selectedImage.imageUrl) : null
+  const lightboxAlt = `${product.name}${selectedImage?.is_primary ? ' (Primary view)' : ''}`
+
   return (
     <article className="product-detail-page">
       <Link className="back-link" to="/">← Back to catalogue</Link>
       <div className="product-detail-layout">
         <section className="product-gallery" aria-label={`${product.name} images`}>
-          <ProductImage className="product-main-image" imageUrl={selectedImage?.imageUrl} alt={`${product.name}${selectedImage?.is_primary ? ', primary view' : ''}`} />
+          {selectedImage ? (
+            <button
+              type="button"
+              className="lightbox-trigger-button main-image-trigger"
+              onClick={() => setLightboxOpen(true)}
+              aria-label={`Open enlarged view of ${product.name}`}
+            >
+              <ProductImage className="product-main-image" imageUrl={selectedImage.imageUrl} alt={`${product.name}${selectedImage.is_primary ? ', primary view' : ''}`} />
+            </button>
+          ) : (
+            <ProductImage className="product-main-image" alt="Artwork image unavailable" />
+          )}
           {images.length > 1 && (
             <div className="product-thumbnails">
               {images.map((image, index) => (
@@ -108,6 +125,13 @@ export function ProductDetailPage() {
           <div className="section-heading"><p className="eyebrow">You may also like</p><h2 id="related-products-heading">Related artwork</h2></div>
           <div className="product-grid related-grid">{product.related_products.map((related) => <ProductCard key={related.id} product={related} />)}</div>
         </section>
+      )}
+      {lightboxOpen && lightboxUrl && (
+        <ImageLightbox
+          src={lightboxUrl}
+          alt={lightboxAlt}
+          onClose={() => setLightboxOpen(false)}
+        />
       )}
     </article>
   )

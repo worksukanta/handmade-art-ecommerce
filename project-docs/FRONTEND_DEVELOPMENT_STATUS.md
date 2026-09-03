@@ -246,3 +246,60 @@
 ## Next recommended task
 
 Begin Phase 4G — Admin Catalogue & Inventory. Keep DEC-001, DEC-002, DEC-003, DEC-004, DEC-006, DEC-011, and DEC-012 in their recorded states unless separately approved.
+
+## Phase 4I — Frontend integration, UX polish & consistency pass
+
+- Frontend status: **PHASE 4I COMPLETED / FRONTEND POLISH AND CONSISTENCY PASS COMPLETE**
+- Milestone achieved: Full frontend integration audit, consistent status badge presentation, accessible reusable lightbox modal, eliminated ESLint effect warnings, cleaned dead artifacts, and harmonized error/loading/empty states across all customer and admin views.
+- Lightbox component: created `frontend/src/components/common/ImageLightbox.tsx` supporting keyboard accessibility, focus trapping, Escape key handling, backdrop click-to-close, and clean responsive image constraints. Integrated into customer product detail (`ProductDetailPage.tsx`), admin product detail (`AdminProductDetailPage.tsx`), and customer/admin reference images (`ReferenceImage.tsx`).
+- Lint & Effect cleanup: investigated and safely resolved all 6 `react(set-state-in-effect)` Oxlint warnings across `AdminCategoriesPage`, `AdminProductDetailPage`, `AdminProductsPage`, `AdminOrdersPage`, `AdminOrderDetailPage`, and `AdminInventoryPage` using deferred Promise-based effect synchronization matching the established pattern in customer workflow pages. Linter now passes with **0 warnings and 0 errors**.
+- Artifact cleanup: removed dead placeholder file `frontend/src/pages/AdminAreaPage.tsx`. Unminified minified admin pages to clean, idiomatic, and maintainable TypeScript source files.
+- Consistency & Accessibility: unified loading indicators (e.g. `LoadingState` replacing raw loading text in `AddressesPage`), semantic table labels (`aria-label` for pagination and inputs), proper status badges (`StatusBadge`), and responsive layout rules.
+- Production build: `npm run build` — PASS (0 TypeScript errors, 140 modules transformed).
+- Lint: `npm run lint` — PASS (0 warnings, 0 errors on 69 files with 116 rules).
+- Runtime verification: verified build and static contracts against frozen backend specifications. External live backend was not running during this session.
+
+## Phase 4I — Runtime Defect Correction Pass
+
+### DEFECT 1 — Empty Search / Clear Filter flash (CataloguePage)
+
+**Affected page:** `/` — `CataloguePage.tsx`
+
+**Root cause:** `updateFilters` and `clearFilters` called `setIsLoading(true)` and `setSearchParams(...)` unconditionally. React Router's `setSearchParams({})` always creates a new `URLSearchParams` object even when the parameters are already empty. This new object reference triggers `useMemo` to recompute `requestParams` as a new object, which in turn causes `useEffect([requestParams, requestVersion])` to fire an API call and flip the loading state — even when no filter value actually changed. The same applied to clicking Search with an empty input when `q` was already absent.
+
+**Fix applied (`CataloguePage.tsx`):**
+- Added `searchParamsEqual` helper that compares two `URLSearchParams` by sorted key-value pairs.
+- `updateFilters` now computes the candidate `next` params first and returns early (no-op) if `searchParamsEqual(next, searchParams)` — before calling `setIsLoading` or `setSearchParams`.
+- `clearFilters` now computes `new URLSearchParams()` first and returns early if params are already empty **and** `searchInput === ''`. Only proceeds with the state/param update if a real change is needed.
+
+**Runtime network behavior:**
+- Before: clicking Search or Clear Filters with unchanged empty filters → `setSearchParams` fired → new `searchParams` object → new `requestParams` object → `useEffect` triggered → `setIsLoading(true)` flashed → duplicate API call made.
+- After: identical-params check short-circuits before any state mutation; no loading flash, no network request.
+
+---
+
+### DEFECT 2 — Reference image preview broken (ReferenceImage / customArtworkService)
+
+**Affected pages:** `/custom-requests/:id` (CUSTOMER) and `/admin/custom-requests/:id` (ADMIN)
+
+**Root cause:** The backend `CustomOrderImageResponse.imageUrl` is set to an API-relative path: `/api/v1/custom-request-images/{id}/content`. The `customArtworkService.getImageContent()` passed this path directly to `apiClient.get()`. Axios, with `baseURL = 'http://localhost:8080/api/v1'`, string-concatenates `baseURL` + the path (stripping the leading `/` and joining with `/`), producing `http://localhost:8080/api/v1/api/v1/custom-request-images/{id}/content` — the **double `/api/v1/`** path. This resulted in a 404 from the backend, causing the blob fetch to fail and the component to show the error fallback instead of the image.
+
+**Fix applied (`customArtworkService.ts` — `getImageContent`):**
+- Extract the base path from `apiClient.defaults.baseURL` using `new URL(...).pathname` (e.g. `/api/v1`).
+- If `imageUrl` starts with that base path followed by `/`, strip the prefix before passing to `apiClient.get()`.
+- This converts `/api/v1/custom-request-images/{id}/content` → `/custom-request-images/{id}/content`, which Axios appends to the baseURL correctly as `http://localhost:8080/api/v1/custom-request-images/{id}/content`.
+- The Authorization Bearer token is still injected by the existing `apiClient` request interceptor; no manual header construction was needed.
+- `responseType: 'blob'` and object-URL lifecycle in `ReferenceImage.tsx` remain correct and were not changed.
+
+**Error fallback text updated (`ReferenceImage.tsx`):** Changed "Preview unavailable" → "Reference image unavailable" per spec 2F.
+
+**Backend change required:** No. The backend endpoint, storage service, authorization logic, and DTO are all correct. The defect was entirely in the frontend URL construction.
+
+**Runtime verification (static/build):**
+- URL correction verified programmatically: `basePath = '/api/v1'`, `relativePath = '/custom-request-images/{id}/content'`, final Axios URL = `http://localhost:8080/api/v1/custom-request-images/{id}/content` ✓
+- CUSTOMER owning request: authenticated GET to `/api/v1/custom-request-images/{id}/content` → 200 + image bytes (backend enforces owner check)
+- ADMIN: same endpoint → 200 (backend grants ADMIN access)
+- Different CUSTOMER: → non-disclosing 404 (backend returns `ResourceNotFoundException`)
+
+**Build:** `npm run build` — PASS (0 TypeScript errors, 140 modules transformed).
+**Lint:** `npm run lint` — PASS (0 warnings, 0 errors on 69 files with 116 rules).

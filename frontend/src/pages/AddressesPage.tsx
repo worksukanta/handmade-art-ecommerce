@@ -1,15 +1,126 @@
 import { useEffect, useState } from 'react'
 import { AddressForm } from '../components/account/AddressForm'
 import { EmptyState } from '../components/feedback/EmptyState'
+import { LoadingState } from '../components/feedback/LoadingState'
 import { FormError } from '../components/forms/FormError'
 import { accountService } from '../services/accountService'
 import type { Address, AddressRequest } from '../types/commerce'
 import { normalizeApiError } from '../utils/apiError'
 
 export function AddressesPage() {
-  const [addresses, setAddresses] = useState<Address[]>([]); const [loading, setLoading] = useState(true); const [editing, setEditing] = useState<Address | 'new' | null>(null); const [error, setError] = useState<string | null>(null)
-  useEffect(() => { let current = true; void accountService.listAddresses().then((data) => { if (current) setAddresses(data) }).catch((cause: unknown) => { if (current) setError(normalizeApiError(cause).message) }).finally(() => { if (current) setLoading(false) }); return () => { current = false } }, [])
-  const save = async (request: AddressRequest) => { try { const saved = editing === 'new' ? await accountService.createAddress(request) : await accountService.updateAddress((editing as Address).id, request); setAddresses((current) => editing === 'new' ? [...current, saved] : current.map((address) => address.id === saved.id ? saved : address)); setEditing(null); setError(null) } catch (cause) { setError(normalizeApiError(cause).message) } }
-  const remove = async (id: number) => { if (!window.confirm('Delete this address?')) return; try { await accountService.deleteAddress(id); setAddresses((current) => current.filter((address) => address.id !== id)) } catch (cause) { setError(normalizeApiError(cause).message) } }
-  return <section className="commerce-page"><div className="page-heading heading-actions"><div><p className="eyebrow">Delivery details</p><h1>Addresses</h1></div><button className="button button-primary" type="button" onClick={() => setEditing('new')}>Add address</button></div>{error && <FormError message={error} />}{editing && <div className="editor-panel"><h2>{editing === 'new' ? 'Add address' : 'Edit address'}</h2><AddressForm initial={editing === 'new' ? undefined : editing} onCancel={() => setEditing(null)} onSave={save} /></div>}{!loading && addresses.length === 0 && !editing && <EmptyState title="No saved addresses" message="Add an address before checking out." />}{loading ? <p role="status">Loading addresses…</p> : <div className="address-grid">{addresses.map((address) => <article className="address-card" key={address.id}><h2>{address.recipient_name}</h2>{address.is_default && <span className="product-badge">Default</span>}<address>{address.line1}<br />{address.line2 && <>{address.line2}<br /></>}{address.city}, {address.state_province} {address.postal_code}<br />{address.country}{address.phone && <><br />{address.phone}</>}</address><div className="form-actions"><button className="text-button" type="button" onClick={() => setEditing(address)}>Edit</button><button className="text-button danger" type="button" onClick={() => void remove(address.id)}>Delete</button></div></article>)}</div>}</section>
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<Address | 'new' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let current = true
+    void accountService
+      .listAddresses()
+      .then((data) => {
+        if (current) setAddresses(data)
+      })
+      .catch((cause: unknown) => {
+        if (current) setError(normalizeApiError(cause).message)
+      })
+      .finally(() => {
+        if (current) setLoading(false)
+      })
+    return () => {
+      current = false
+    }
+  }, [])
+
+  const save = async (request: AddressRequest) => {
+    try {
+      const saved =
+        editing === 'new'
+          ? await accountService.createAddress(request)
+          : await accountService.updateAddress((editing as Address).id, request)
+      setAddresses((current) =>
+        editing === 'new' ? [...current, saved] : current.map((address) => (address.id === saved.id ? saved : address))
+      )
+      setEditing(null)
+      setError(null)
+    } catch (cause) {
+      setError(normalizeApiError(cause).message)
+    }
+  }
+
+  const remove = async (id: number) => {
+    if (!window.confirm('Delete this address?')) return
+    try {
+      await accountService.deleteAddress(id)
+      setAddresses((current) => current.filter((address) => address.id !== id))
+    } catch (cause) {
+      setError(normalizeApiError(cause).message)
+    }
+  }
+
+  return (
+    <section className="commerce-page">
+      <div className="page-heading heading-actions">
+        <div>
+          <p className="eyebrow">Delivery details</p>
+          <h1>Addresses</h1>
+        </div>
+        <button className="button button-primary" type="button" onClick={() => setEditing('new')}>
+          Add address
+        </button>
+      </div>
+      {error && <FormError message={error} />}
+      {editing && (
+        <div className="editor-panel">
+          <h2>{editing === 'new' ? 'Add address' : 'Edit address'}</h2>
+          <AddressForm
+            initial={editing === 'new' ? undefined : editing}
+            onCancel={() => setEditing(null)}
+            onSave={save}
+          />
+        </div>
+      )}
+      {!loading && addresses.length === 0 && !editing && (
+        <EmptyState title="No saved addresses" message="Add an address before checking out." />
+      )}
+      {loading ? (
+        <LoadingState label="Loading addresses" />
+      ) : (
+        <div className="address-grid">
+          {addresses.map((address) => (
+            <article className="address-card" key={address.id}>
+              <h2>{address.recipient_name}</h2>
+              {address.is_default && <span className="product-badge">Default</span>}
+              <address>
+                {address.line1}
+                <br />
+                {address.line2 && (
+                  <>
+                    {address.line2}
+                    <br />
+                  </>
+                )}
+                {address.city}, {address.state_province} {address.postal_code}
+                <br />
+                {address.country}
+                {address.phone && (
+                  <>
+                    <br />
+                    {address.phone}
+                  </>
+                )}
+              </address>
+              <div className="form-actions">
+                <button className="text-button" type="button" onClick={() => setEditing(address)}>
+                  Edit
+                </button>
+                <button className="text-button danger" type="button" onClick={() => void remove(address.id)}>
+                  Delete
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  )
 }

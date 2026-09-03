@@ -7,7 +7,15 @@ export const customArtworkService = {
   async list(page = 0, size = 20, status?: CustomRequestStatus): Promise<CustomRequestPage> { return (await apiClient.get<CustomRequestPage>('/custom-requests', { params: { page, size, status } })).data },
   async get(id: number): Promise<CustomArtworkRequest> { return (await apiClient.get<CustomArtworkRequest>(`/custom-requests/${id}`)).data },
   async uploadImage(id: number, file: File): Promise<CustomOrderImage> { const data = new FormData(); data.append('file', file); return (await apiClient.post<CustomOrderImage>(`/custom-requests/${id}/images`, data)).data },
-  async getImageContent(imageUrl: string): Promise<Blob> { return (await apiClient.get<Blob>(imageUrl, { responseType: 'blob' })).data },
+  async getImageContent(imageUrl: string): Promise<Blob> {
+    // imageUrl from the backend is an API-relative path like "/api/v1/custom-request-images/{id}/content".
+    // apiClient.baseURL is already "http://localhost:8080/api/v1", so passing the full /api/v1/... path
+    // would cause Axios to concatenate baseURL + path → ".../api/v1/api/v1/..." (double prefix).
+    // Strip the base path prefix so Axios resolves against the correct baseURL root.
+    const basePath = (apiClient.defaults.baseURL ? new URL(apiClient.defaults.baseURL, 'http://localhost').pathname : '/api/v1').replace(/\/$/, '')
+    const relativePath = imageUrl.startsWith(basePath + '/') ? imageUrl.slice(basePath.length) : imageUrl
+    return (await apiClient.get<Blob>(relativePath, { responseType: 'blob' })).data
+  },
   async getQuotation(id: number): Promise<Quotation> { return (await apiClient.get<Quotation>(`/custom-requests/${id}/quotation`)).data },
   async approveQuotation(id: number): Promise<Quotation> { return (await apiClient.post<Quotation>(`/quotations/${id}/approve`)).data },
   async rejectQuotation(id: number): Promise<Quotation> { return (await apiClient.post<Quotation>(`/quotations/${id}/reject`)).data },
