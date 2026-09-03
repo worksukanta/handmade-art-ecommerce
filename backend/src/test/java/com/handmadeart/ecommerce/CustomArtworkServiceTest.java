@@ -25,13 +25,17 @@ import com.handmadeart.ecommerce.service.QuotationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 /**
@@ -75,13 +80,16 @@ class CustomArtworkServiceTest {
     @Mock private CustomOrderImageRepository imageRepository;
     @Mock private QuotationRepository quotationRepository;
 
+    @TempDir Path tempDir;
+
     private CustomArtworkRequestService artworkService;
     private QuotationService quotationService;
 
     @BeforeEach
     void setUp() {
         artworkService = new CustomArtworkRequestService(
-                requestRepository, imageRepository, "uploads/reference-images");
+                requestRepository, imageRepository,
+                tempDir.resolve("configured").resolve("..").resolve("reference-images").toString());
         quotationService = new QuotationService(quotationRepository, requestRepository);
     }
 
@@ -253,6 +261,94 @@ class CustomArtworkServiceTest {
 
         assertThatThrownBy(() -> artworkService.getCustomRequest(customer, 999L))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("CAR-S-06a: valid image upload stores file beneath normalized root before metadata")
+    void uploadReferenceImage_validImage_storesFileAndPersistsMetadata() {
+        AppUser customer = buildCustomer(1L);
+        CustomOrderRequest req = buildRequest(10L, customer, CustomOrderRequestStatus.REQUESTED);
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "reference.png", "image/png", new byte[] {1, 2, 3, 4});
+        Path expectedRoot = tempDir.resolve("reference-images").toAbsolutePath().normalize();
+
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(imageRepository.save(any(CustomOrderImage.class))).thenAnswer(invocation -> {
+            CustomOrderImage image = invocation.getArgument(0);
+            Path stored = expectedRoot.resolve(image.getStorageReference()).normalize();
+            assertThat(stored).startsWith(expectedRoot);
+            assertThat(Files.isRegularFile(stored)).isTrue();
+            assertThat(stored).hasBinaryContent(new byte[] {1, 2, 3, 4});
+            setId(image, CustomOrderImage.class, 91L);
+            return image;
+        });
+
+        var response = artworkService.uploadReferenceImage(customer, 10L, file);
+
+        assertThat(response.getId()).isEqualTo(91L);
+        assertThat(response.getCustomOrderRequestId()).isEqualTo(10L);
+        assertThat(response.getOriginalFilename()).isEqualTo("reference.png");
+        assertThat(response.getContentType()).isEqualTo("image/png");
+        assertThat(response.getStorageReference()).startsWith("request-10/");
+        assertThat(response.getStorageReference()).doesNotContain("..");
+        assertThat(expectedRoot.resolve(response.getStorageReference()).normalize())
+                .startsWith(expectedRoot);
+        verify(imageRepository).save(any(CustomOrderImage.class));
+    }
+
+    @Test
+    @DisplayName("CAR-S-06b: empty reference image remains rejected without persistence")
+    void uploadReferenceImage_emptyFile_rejected() {
+        AppUser customer = buildCustomer(1L);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(
+                buildRequest(10L, customer, CustomOrderRequestStatus.REQUESTED)));
+        MockMultipartFile file = new MockMultipartFile("file", "empty.png", "image/png", new byte[0]);
+
+        assertThatThrownBy(() -> artworkService.uploadReferenceImage(customer, 10L, file))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must not be empty");
+        verify(imageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CAR-S-06c: non-image reference remains rejected without persistence")
+    void uploadReferenceImage_nonImage_rejected() {
+        AppUser customer = buildCustomer(1L);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(
+                buildRequest(10L, customer, CustomOrderRequestStatus.REQUESTED)));
+        MockMultipartFile file = new MockMultipartFile("file", "notes.txt", "text/plain", new byte[] {1});
+
+        assertThatThrownBy(() -> artworkService.uploadReferenceImage(customer, 10L, file))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Only image files");
+        verify(imageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CAR-S-06d: missing reference-image request remains non-disclosing")
+    void uploadReferenceImage_missingRequest_rejected() {
+        AppUser customer = buildCustomer(1L);
+        when(requestRepository.findById(999L)).thenReturn(Optional.empty());
+        MockMultipartFile file = new MockMultipartFile("file", "reference.png", "image/png", new byte[] {1});
+
+        assertThatThrownBy(() -> artworkService.uploadReferenceImage(customer, 999L, file))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Custom request not found");
+        verify(imageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("CAR-S-06e: foreign reference-image request remains non-disclosing")
+    void uploadReferenceImage_foreignRequest_rejected() {
+        AppUser customer = buildCustomer(1L);
+        when(requestRepository.findById(20L)).thenReturn(Optional.of(
+                buildRequest(20L, buildCustomer(2L), CustomOrderRequestStatus.REQUESTED)));
+        MockMultipartFile file = new MockMultipartFile("file", "reference.png", "image/png", new byte[] {1});
+
+        assertThatThrownBy(() -> artworkService.uploadReferenceImage(customer, 20L, file))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Custom request not found");
+        verify(imageRepository, never()).save(any());
     }
 
     // =========================================================================

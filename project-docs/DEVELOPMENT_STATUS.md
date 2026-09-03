@@ -31,6 +31,8 @@ Backend MVP Implementation — COMPLETE (except decision-blocked endpoints)
 
 ## Last Verified Milestone
 
+Targeted reference-image upload fix: `CustomArtworkRequestService` now converts the configured upload root to an absolute normalized path before passing the destination to `MultipartFile.transferTo`, preventing relative destinations from being resolved beneath the multipart temporary directory. Containment checks keep the request directory and generated destination beneath that root. Regression coverage verifies physical bytes and metadata for a valid upload plus empty-file, non-image, missing-request, and foreign-owner rejection. Focused tests: 40 passed. Full `mvn test`: 338 tests, 0 failures, 0 errors, 0 skipped - BUILD SUCCESS. A live multipart upload also stored the file beneath the configured reference-image root and returned the persisted metadata.
+
 Final Backend Acceptance Review — PASSED.
 
 `mvn clean test` (default profile, no PostgreSQL required)

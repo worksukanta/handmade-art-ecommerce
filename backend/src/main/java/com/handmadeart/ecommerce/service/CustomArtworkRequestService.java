@@ -74,7 +74,7 @@ public class CustomArtworkRequestService {
             @Value("${app.upload.reference-images:uploads/reference-images}") String uploadDir) {
         this.requestRepository = requestRepository;
         this.imageRepository = imageRepository;
-        this.uploadRoot = Paths.get(uploadDir);
+        this.uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
     // =========================================================================
@@ -214,11 +214,17 @@ public class CustomArtworkRequestService {
         // DEC-003 OPEN: no size limit enforced here
         String extension = extensionForContentType(contentType);
         String serverFilename = UUID.randomUUID() + extension;
-        Path requestDir = uploadRoot.resolve("request-" + requestId);
+        Path requestDir = uploadRoot.resolve("request-" + requestId).normalize();
+        if (!requestDir.startsWith(uploadRoot)) {
+            throw new IllegalArgumentException("Invalid reference image storage path");
+        }
 
         try {
             Files.createDirectories(requestDir);
-            Path destination = requestDir.resolve(serverFilename);
+            Path destination = requestDir.resolve(serverFilename).normalize();
+            if (!destination.startsWith(requestDir)) {
+                throw new IllegalArgumentException("Invalid reference image storage path");
+            }
             file.transferTo(destination.toFile());
         } catch (IOException ex) {
             log.error("Failed to store reference image for request {}", requestId, ex);
