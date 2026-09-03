@@ -6,6 +6,8 @@ import com.handmadeart.ecommerce.dto.catalogue.PageResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderStatusRequest;
 import com.handmadeart.ecommerce.dto.order.AdminOrderSummaryResponse;
+import com.handmadeart.ecommerce.dto.order.AdminPaymentResponse;
+import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.entity.OrderStatus;
 import com.handmadeart.ecommerce.exception.InvalidWorkflowTransitionException;
 import com.handmadeart.ecommerce.exception.ResourceNotFoundException;
@@ -237,6 +239,31 @@ class AdminOrderControllerTest {
                         .header("Authorization", customerToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminToken_getOrderPayments_returns200Collection() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminOrderService.getOrderPayments(1L)).thenReturn(List.of(new AdminPaymentResponse()));
+        mockMvc.perform(get("/api/v1/admin/orders/1/payments").header("Authorization", adminToken()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void adminToken_getOrderShipment_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminOrderService.getOrderShipment(1L)).thenReturn(new ShipmentResponse());
+        mockMvc.perform(get("/api/v1/admin/orders/1/shipment").header("Authorization", adminToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void customerToken_cannotReadAdminOrderChildren() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        mockMvc.perform(get("/api/v1/admin/orders/1/payments").header("Authorization", customerToken()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/admin/orders/1/shipment").header("Authorization", customerToken()))
                 .andExpect(status().isForbidden());
     }
 }

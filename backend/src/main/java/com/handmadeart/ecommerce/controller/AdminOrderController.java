@@ -4,6 +4,8 @@ import com.handmadeart.ecommerce.dto.catalogue.PageResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderStatusRequest;
 import com.handmadeart.ecommerce.dto.order.AdminOrderSummaryResponse;
+import com.handmadeart.ecommerce.dto.order.AdminPaymentResponse;
+import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.service.AdminOrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Admin order management controller.
@@ -65,6 +69,16 @@ public class AdminOrderController {
     @GetMapping("/{id}")
     public ResponseEntity<AdminOrderResponse> getOrder(@PathVariable Long id) {
         return ResponseEntity.ok(adminOrderService.getOrderDetail(id));
+    }
+
+    @GetMapping("/{id}/payments")
+    public ResponseEntity<List<AdminPaymentResponse>> getOrderPayments(@PathVariable Long id) {
+        return ResponseEntity.ok(adminOrderService.getOrderPayments(id));
+    }
+
+    @GetMapping("/{id}/shipment")
+    public ResponseEntity<ShipmentResponse> getOrderShipment(@PathVariable Long id) {
+        return ResponseEntity.ok(adminOrderService.getOrderShipment(id));
     }
 
     /**

@@ -1,5 +1,15 @@
 # DEVELOPMENT STATUS
 
+## Phase 4H targeted ADMIN discovery contract completion
+
+The four refresh-safety gaps identified before the Phase 4H frontend were completed with read-only ADMIN contracts. `GET /api/v1/admin/products` remains paginated but now returns `AdminProductSummaryResponse`, preserving the existing summary fields and adding authoritative `status`; its repository query continues to include both ACTIVE and INACTIVE products. `GET /api/v1/admin/products/{productId}` returns `AdminProductDetailResponse` for either status without using the public ACTIVE-only query. The response includes the editable product fields, status, category, image metadata/content URLs, existing availability data, status-aware related-product summaries, and timestamps; unknown IDs use the normalized 404 response.
+
+`GET /api/v1/admin/categories` now returns the existing safe `CategoryResponse[]`, sorted by name and sourced from all categories, so both ACTIVE and INACTIVE records remain discoverable. Public product and category reads are unchanged and retain their active-only behavior.
+
+`GET /api/v1/admin/orders/{orderId}/payments` validates that the standard order exists and returns all associated records as `AdminPaymentResponse[]`; a known order with no payments returns `200 []`, while an unknown order returns normalized 404. `GET /api/v1/admin/orders/{orderId}/shipment` validates the order and returns the associated existing `ShipmentResponse`; unknown orders and known orders without shipments return normalized 404. Existing customer ownership-scoped reads and resource-ID ADMIN payment/shipment reads are unchanged.
+
+All new paths remain under the centralized `/api/v1/admin/**` ADMIN rule: anonymous requests receive 401 and authenticated CUSTOMER requests receive 403. Focused controller/service tests: 64 passed, 0 failures/errors/skips. Full `mvn clean test`: 374 tests passed, 0 failures/errors/skips. Runtime verification was not performed because no backend was listening on ports 8080/8081 and no explicit local ADMIN seed password was available; no database state was manufactured.
+
 ## Project
 
 Handmade & Custom Artwork E-Commerce Platform

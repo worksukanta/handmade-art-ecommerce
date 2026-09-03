@@ -1,5 +1,7 @@
 package com.handmadeart.ecommerce.controller;
 
+import com.handmadeart.ecommerce.dto.admin.AdminProductDetailResponse;
+import com.handmadeart.ecommerce.dto.admin.AdminProductSummaryResponse;
 import com.handmadeart.ecommerce.dto.admin.InventoryResponse;
 import com.handmadeart.ecommerce.dto.admin.InventoryUpdateRequest;
 import com.handmadeart.ecommerce.dto.admin.ProductRequest;
@@ -68,10 +70,15 @@ public class AdminProductController {
      * Errors:  401, 403
      */
     @GetMapping("/api/v1/admin/products")
-    public ResponseEntity<PageResponse<ProductSummaryResponse>> listAllProducts(
+    public ResponseEntity<PageResponse<AdminProductSummaryResponse>> listAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(adminCatalogueService.listAllProducts(page, size));
+    }
+
+    @GetMapping("/api/v1/admin/products/{id}")
+    public ResponseEntity<AdminProductDetailResponse> getProduct(@PathVariable Long id) {
+        return ResponseEntity.ok(adminCatalogueService.getProduct(id));
     }
 
     /**

@@ -3,6 +3,8 @@ package com.handmadeart.ecommerce.service;
 import com.handmadeart.ecommerce.dto.catalogue.PageResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderResponse;
 import com.handmadeart.ecommerce.dto.order.AdminOrderSummaryResponse;
+import com.handmadeart.ecommerce.dto.order.AdminPaymentResponse;
+import com.handmadeart.ecommerce.dto.customartwork.ShipmentResponse;
 import com.handmadeart.ecommerce.entity.CustomerOrder;
 import com.handmadeart.ecommerce.entity.OrderItem;
 import com.handmadeart.ecommerce.entity.OrderStatus;
@@ -10,6 +12,8 @@ import com.handmadeart.ecommerce.exception.InvalidWorkflowTransitionException;
 import com.handmadeart.ecommerce.exception.ResourceNotFoundException;
 import com.handmadeart.ecommerce.repository.CustomerOrderRepository;
 import com.handmadeart.ecommerce.repository.OrderItemRepository;
+import com.handmadeart.ecommerce.repository.PaymentRepository;
+import com.handmadeart.ecommerce.repository.ShipmentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -54,11 +58,17 @@ public class AdminOrderService {
 
     private final CustomerOrderRepository customerOrderRepository;
     private final OrderItemRepository orderItemRepository;
+    private final PaymentRepository paymentRepository;
+    private final ShipmentRepository shipmentRepository;
 
     public AdminOrderService(CustomerOrderRepository customerOrderRepository,
-                             OrderItemRepository orderItemRepository) {
+                             OrderItemRepository orderItemRepository,
+                             PaymentRepository paymentRepository,
+                             ShipmentRepository shipmentRepository) {
         this.customerOrderRepository = customerOrderRepository;
         this.orderItemRepository = orderItemRepository;
+        this.paymentRepository = paymentRepository;
+        this.shipmentRepository = shipmentRepository;
     }
 
     // =========================================================================
@@ -99,6 +109,22 @@ public class AdminOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
         return AdminOrderResponse.from(order, items);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminPaymentResponse> getOrderPayments(Long orderId) {
+        requireOrder(orderId);
+        return paymentRepository.findByOrderId(orderId).stream()
+                .map(AdminPaymentResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ShipmentResponse getOrderShipment(Long orderId) {
+        requireOrder(orderId);
+        return shipmentRepository.findByOrderId(orderId)
+                .map(ShipmentResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Shipment not found"));
     }
 
     // =========================================================================
@@ -144,5 +170,10 @@ public class AdminOrderService {
         CustomerOrder saved = customerOrderRepository.save(order);
         List<OrderItem> items = orderItemRepository.findByOrderId(saved.getId());
         return AdminOrderResponse.from(saved, items);
+    }
+
+    private CustomerOrder requireOrder(Long orderId) {
+        return customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 }

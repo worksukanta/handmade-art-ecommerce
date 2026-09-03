@@ -1,5 +1,7 @@
 package com.handmadeart.ecommerce.service;
 
+import com.handmadeart.ecommerce.dto.admin.AdminProductDetailResponse;
+import com.handmadeart.ecommerce.dto.admin.AdminProductSummaryResponse;
 import com.handmadeart.ecommerce.dto.admin.CategoryRequest;
 import com.handmadeart.ecommerce.dto.admin.InventoryResponse;
 import com.handmadeart.ecommerce.dto.admin.InventoryUpdateRequest;
@@ -113,6 +115,13 @@ public class AdminCatalogueService {
     // Category management
     // =========================================================================
 
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listAllCategories() {
+        return categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
     /**
      * Create a new category.
      *
@@ -201,7 +210,7 @@ public class AdminCatalogueService {
      * @return paged ProductSummaryResponse for all products
      */
     @Transactional(readOnly = true)
-    public PageResponse<ProductSummaryResponse> listAllProducts(int page, int size) {
+    public PageResponse<AdminProductSummaryResponse> listAllProducts(int page, int size) {
         if (size <= 0) size = DEFAULT_PAGE_SIZE;
         if (size > MAX_PAGE_SIZE) size = MAX_PAGE_SIZE;
         if (page < 0) page = 0;
@@ -209,10 +218,10 @@ public class AdminCatalogueService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Product> productPage = productRepository.findAll(pageable);
 
-        Page<ProductSummaryResponse> summaryPage = productPage.map(product -> {
+        Page<AdminProductSummaryResponse> summaryPage = productPage.map(product -> {
             List<ProductImage> images = productImageRepository
                     .findByProductIdOrderByDisplayOrderAsc(product.getId());
-            return ProductSummaryResponse.from(product, images);
+            return AdminProductSummaryResponse.from(product, images);
         });
 
         return PageResponse.from(summaryPage);
@@ -221,6 +230,13 @@ public class AdminCatalogueService {
     // =========================================================================
     // Product management
     // =========================================================================
+
+    @Transactional(readOnly = true)
+    public AdminProductDetailResponse getProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+        return buildAdminProductDetailResponse(product);
+    }
 
     /**
      * Create a new product.
@@ -621,6 +637,21 @@ public class AdminCatalogueService {
                         .toList();
 
         return ProductDetailResponse.from(product, images, inventory.orElse(null), relatedSummaries);
+    }
+
+    private AdminProductDetailResponse buildAdminProductDetailResponse(Product product) {
+        List<ProductImage> images = productImageRepository
+                .findByProductIdOrderByDisplayOrderAsc(product.getId());
+        Optional<Inventory> inventory = inventoryRepository.findByProductId(product.getId());
+        List<AdminProductSummaryResponse> relatedSummaries =
+                productRelatedRepository.findByProductId(product.getId()).stream()
+                        .map(related -> {
+                            Product relatedProduct = related.getRelatedProduct();
+                            List<ProductImage> relatedImages = productImageRepository
+                                    .findByProductIdOrderByDisplayOrderAsc(relatedProduct.getId());
+                            return AdminProductSummaryResponse.from(relatedProduct, relatedImages);
+                        }).toList();
+        return AdminProductDetailResponse.from(product, images, inventory.orElse(null), relatedSummaries);
     }
 
     private static CategoryStatus parseCategoryStatus(String value) {

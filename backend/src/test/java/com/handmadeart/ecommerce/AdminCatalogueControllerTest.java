@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.handmadeart.ecommerce.controller.AdminCategoryController;
 import com.handmadeart.ecommerce.controller.AdminProductController;
 import com.handmadeart.ecommerce.dto.admin.CategoryRequest;
+import com.handmadeart.ecommerce.dto.admin.AdminProductDetailResponse;
 import com.handmadeart.ecommerce.dto.admin.InventoryUpdateRequest;
 import com.handmadeart.ecommerce.dto.admin.InventoryResponse;
 import com.handmadeart.ecommerce.dto.admin.ProductRequest;
@@ -174,6 +175,43 @@ class AdminCatalogueControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.error").value("FORBIDDEN"));
+    }
+
+    @Test
+    void adminToken_getProductDetail_returns200() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminCatalogueService.getProduct(10L)).thenReturn(new AdminProductDetailResponse());
+        mockMvc.perform(get("/api/v1/admin/products/10").header("Authorization", adminToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminToken_getProductDetail_unknown_returns404() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminCatalogueService.getProduct(999L)).thenThrow(new ResourceNotFoundException("Product not found"));
+        mockMvc.perform(get("/api/v1/admin/products/999").header("Authorization", adminToken()))
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.error").value("NOT_FOUND"));
+    }
+
+    @Test
+    void customerToken_cannotReadAdminProductDetailOrCategories() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails());
+        mockMvc.perform(get("/api/v1/admin/products/10").header("Authorization", customerToken()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/admin/categories").header("Authorization", customerToken()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminToken_listCategories_returnsAllStatuses() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(adminDetails());
+        when(adminCatalogueService.listAllCategories()).thenReturn(List.of(
+                buildCategoryResponse(1L, "Active", "ACTIVE"),
+                buildCategoryResponse(2L, "Inactive", "INACTIVE")));
+        mockMvc.perform(get("/api/v1/admin/categories").header("Authorization", adminToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"))
+                .andExpect(jsonPath("$[1].status").value("INACTIVE"));
     }
 
     // -------------------------------------------------------------------------
@@ -362,7 +400,7 @@ class AdminCatalogueControllerTest {
 
         // Admin endpoint mocked — we verify the URL is different and returns 200
         com.handmadeart.ecommerce.dto.catalogue.PageResponse<
-                com.handmadeart.ecommerce.dto.catalogue.ProductSummaryResponse> emptyPage =
+                com.handmadeart.ecommerce.dto.admin.AdminProductSummaryResponse> emptyPage =
                 com.handmadeart.ecommerce.dto.catalogue.PageResponse.from(
                         new org.springframework.data.domain.PageImpl<>(List.of()));
         when(adminCatalogueService.listAllProducts(anyInt(), anyInt())).thenReturn(emptyPage);
