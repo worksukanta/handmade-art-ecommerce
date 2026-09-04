@@ -60,8 +60,8 @@ export function OrderDetailPage() {
       await Promise.all([loadOrder(), loadPayments()])
     } catch (cause) {
       const error = normalizeApiError(cause)
-      setPaymentError(error.status === 409 ? 'This order is no longer payable. Its status may already have changed; refresh the order details.' : error.message)
       if (error.status === 409) await Promise.all([loadOrder(), loadPayments()])
+      setPaymentError(error.status === 409 ? 'This order is no longer payable. Its status may already have changed; refresh the order details.' : error.message)
     } finally { setSubmitting(false) }
   }
 

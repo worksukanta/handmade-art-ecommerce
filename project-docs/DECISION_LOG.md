@@ -257,19 +257,26 @@ Affected Areas:
 
 ## DEC-011 — Frontend Test Runner
 
-Status: OPEN
+Status: APPROVED
 
-Issue:
+Decision:
 
-The React project has not yet been initialized, so Jest versus Vitest has not been selected.
+Vitest is the sole frontend unit/component test runner. React Testing Library, `@testing-library/jest-dom`, `@testing-library/user-event`, and jsdom provide behavior-oriented component testing and browser-like DOM support.
 
-Decision Rule:
+Rationale:
 
-Use the testing setup that best matches the actual React project configuration. Do not configure two test runners unnecessarily.
+Vitest integrates directly with the existing React + TypeScript + Vite configuration, reuses Vite transformation, supports ESM without parallel Jest configuration, and provides the smallest maintainable setup for this application. Service modules are mocked at the centralized API boundary; tests do not call the live backend. MSW, Jest, Cypress, and Playwright are not introduced.
 
-Decision Required Before:
+Scope:
 
-Frontend automated testing.
+Frontend unit and component behavior, route/auth/role behavior, form and workflow state gates, centralized API-error normalization, and focused regressions. Dedicated browser E2E testing remains separate and DEC-012 remains OPEN.
+
+Implementation:
+
+- Global jsdom setup: `frontend/src/test/setup.ts`.
+- Shared render/auth helpers: `frontend/src/test/helpers.tsx`.
+- Local/watch command: `npm test`.
+- CI/non-watch command: `npm run test:run`.
 
 ---
 

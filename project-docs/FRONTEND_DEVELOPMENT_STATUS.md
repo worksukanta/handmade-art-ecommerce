@@ -2,10 +2,10 @@
 
 ## Current state
 
-- Frontend status: **PHASE 4G COMPLETED / ADMIN CUSTOM ARTWORK OPERATIONS INTEGRATED**
+- Frontend status: **PHASE 5A COMPLETED / FRONTEND AUTOMATED TESTING ESTABLISHED**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-4f-custom-artwork`
-- Current milestone: Phase 4G — Admin custom artwork operations
+- Frontend branch: `phase-5a-frontend-tests`
+- Current milestone: Phase 5A — Frontend automated testing
 - `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and the end-to-end customer/Admin custom-artwork workflow through delivery
 
 ## Approved frontend stack and setup facts
@@ -17,8 +17,20 @@
 - Routing: React Router in declarative SPA mode
 - API access: Axios through a shared client using `VITE_API_BASE_URL` and the `/api/v1` contract
 - State: React built-in state and Context are sufficient; no external state-management library is approved or required
-- Component testing: React Testing Library; test runner remains open under DEC-011
+- Component testing: Vitest + React Testing Library + jest-dom + user-event in jsdom (DEC-011 APPROVED)
 - CSS/UI library and visual theme: **UNDECIDED**
+
+## Phase 5A verification
+
+- Test stack: Vitest 5 with jsdom, React Testing Library, jest-dom matchers, and user-event; DEC-011 is APPROVED. DEC-012 remains OPEN for dedicated E2E selection.
+- Infrastructure: Vite-integrated test configuration, global cleanup/matchers/object-URL support, and small MemoryRouter/AuthContext helpers. API/service modules are mocked directly; no live backend calls and no MSW layer are used.
+- Coverage added: authentication guards, role mismatch, login return path, logout and invalid startup session; normalized 400/401/403/404/409/413/network/unexpected errors; lightbox semantics/focus/close behaviors; authenticated reference-image blob preview/failure/cleanup; catalogue Search/Clear regression; product purchase eligibility; cart mutations/confirmation; checkout selection/validation/order navigation/duplicate prevention; order payment/status/shipment states and 409 refresh; customer and ADMIN custom-artwork workflow gates and quotation validation; representative ADMIN product creation/list and inventory behavior.
+- Regression fix: payment 409 handling now refreshes authoritative order/payment data before setting the contextual error, preventing the refresh routine from immediately clearing the useful message.
+- Test organization: eight focused files under `frontend/src/test/`, containing 48 behavior tests.
+- Commands: `npm test` for watch/local development and `npm run test:run` for one-shot verification.
+- Verification: `npm run test:run` — PASS (8 files, 48 tests); `npm run build` — PASS; `npm run lint` — PASS with 0 warnings/errors.
+- Intentionally not covered: exhaustive enum/state permutations, static table markup, CSS dimensions/classes, backend security/inventory locking/business calculations, real network/provider flows, and browser E2E journeys. DEC-012 remains the gate for E2E framework selection.
+- Backend/API defects or blockers: none discovered; backend source was not modified.
 
 ## Phase 4A.1 verification
 
