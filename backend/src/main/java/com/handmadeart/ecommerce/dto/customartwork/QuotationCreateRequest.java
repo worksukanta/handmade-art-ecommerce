@@ -15,12 +15,11 @@ import java.time.OffsetDateTime;
  *   Request: QuotationCreateRequest: price, advanceAmount where applicable,
  *            estimatedDelivery, expiry, notes/terms.
  *
- * DEC-005 OPEN: advanceAmount is an optional absolute value supplied by the Admin.
- * No fixed percentage is applied by the server. The field is accepted if provided
- * but is never required.
+ * DEC-005 APPROVED: Admin supplies a positive advance no greater than the quote.
+ * No fixed percentage is applied by the server.
  *
  * quoted_amount: CHECK >= 0 in DB; validated here with @DecimalMin.
- * advance_amount: CHECK IS NULL OR >= 0 in DB; validated if present.
+ * advance_amount: legacy DB permits null/zero; the service enforces DEC-005.
  * expiry_at: must be a future datetime — enforced by the service layer.
  */
 public class QuotationCreateRequest {
@@ -31,10 +30,11 @@ public class QuotationCreateRequest {
     private BigDecimal quotedAmount;
 
     /**
-     * Absolute advance amount. Optional. CHECK >= 0 if present.
-     * DEC-005 OPEN: no fixed percentage; Admin enters the exact amount.
+     * Absolute advance amount. Required and positive.
+     * DEC-005 APPROVED: no fixed percentage; Admin enters the exact amount.
      */
-    @DecimalMin(value = "0.00", message = "Advance amount must be >= 0")
+    @NotNull(message = "Advance amount is required")
+    @DecimalMin(value = "0.00", inclusive = false, message = "Advance amount must be greater than zero")
     private BigDecimal advanceAmount;
 
     /** Optional estimated delivery date for the artwork. */

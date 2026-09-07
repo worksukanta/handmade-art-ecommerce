@@ -61,7 +61,7 @@ Issue:
 
 JWT-based authentication is approved, but exact logout, token refresh, and token revocation semantics are not fully finalized.
 
-Possible implementation approaches must be evaluated when Authentication development begins.
+Phase 5C MVP status: client-side token discard remains accepted for the stateless JWT demo. Server logout, refresh and revocation remain unimplemented. This decision stays OPEN for future token-lifecycle implementation; it does not block the current MVP.
 
 Affected Areas:
 
@@ -78,11 +78,11 @@ Final implementation of logout/token lifecycle behavior.
 
 ## DEC-003 — File Upload Type and Size Limits
 
-Status: OPEN
+Status: DEFERRED
 
 Issue:
 
-Reference-image validation is required, but exact supported file types and maximum file size must be finalized before implementation of upload validation.
+The final business allowlist and size policy remain unresolved. The implemented MVP rejects empty files and non-image MIME declarations, generates storage filenames, and applies configurable 10MB file / 12MB request multipart limits with normalized 413 responses. Image content reads validate stored MIME metadata, enforce path containment, and now send a restrictive sandbox CSP. MIME declarations are not binary-content verification; no decoding, sanitization or malware-scanning pipeline is claimed.
 
 Affected Areas:
 
@@ -93,7 +93,7 @@ Affected Areas:
 
 Decision Required Before:
 
-File upload implementation.
+A stricter business upload policy or deployment beyond the accepted controlled MVP/demo.
 
 ---
 
@@ -142,11 +142,11 @@ Rules:
 
 ## DEC-006 — Order Cancellation Eligibility
 
-Status: OPEN
+Status: DEFERRED
 
 Issue:
 
-Order cancellation exists where eligible, but exact allowed statuses/time window are not finalized.
+Cancellation eligibility and timing remain unresolved. No customer cancellation endpoint/UI is implemented, and ADMIN cancellation remains rejected. Deferring this behavior is accepted for the current MVP/demo; implementation still requires an approved rule.
 
 Affected Areas:
 
@@ -269,7 +269,7 @@ Vitest integrates directly with the existing React + TypeScript + Vite configura
 
 Scope:
 
-Frontend unit and component behavior, route/auth/role behavior, form and workflow state gates, centralized API-error normalization, and focused regressions. Dedicated browser E2E testing remains separate and DEC-012 remains OPEN.
+Frontend unit and component behavior, route/auth/role behavior, form and workflow state gates, centralized API-error normalization, and focused regressions. Dedicated browser E2E testing remains separate and DEC-012 is DEFERRED.
 
 Implementation:
 
@@ -290,11 +290,11 @@ No browser E2E framework is added for the MVP. Browser automation is deferred as
 
 Rationale:
 
-The backend's 381-test automated suite, the focused 48-test Vitest/React Testing Library suite, and full live PostgreSQL/API workflow verification provide proportionate MVP regression confidence without adding another framework and browser-binary maintenance surface. Playwright or Cypress may be selected later if repeatable cross-browser UI journeys become a delivery requirement; only one should then be adopted.
+The backend automated suite, the 65-test Vitest/React Testing Library baseline, and the previously completed live PostgreSQL/API workflow verification provide proportionate MVP regression confidence without adding another framework and browser-binary maintenance surface. Playwright or Cypress may be selected later if repeatable cross-browser UI journeys become a delivery requirement; only one should then be adopted.
 
 Scope:
 
-Automated browser E2E implementation beyond the MVP. Phase 5B used real frontend/backend availability checks and live, unmocked API workflows. Visual, responsive, keyboard, lightbox-interaction, login-return-path, and Search/Clear network-panel smoke checks were not claimed because no controllable browser surface was available.
+Automated browser E2E implementation beyond the MVP. Phase 5B used real frontend/backend availability checks and live, unmocked API workflows. Those earlier agent runs did not claim visual/browser checks because no controllable browser surface was available. The Phase 5C request explicitly records responsive/manual UI review as accepted by the user. This is user-provided acceptance, not a new automated browser run.
 
 ---
 

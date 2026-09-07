@@ -736,4 +736,21 @@ class CartServiceTest {
         // No cart record created
         verify(cartRepository, never()).save(any());
     }
+    @Test
+    void accumulatedQuantityCannotOverflowToNegative() {
+        AppUser user = buildCustomer(1L);
+        Cart cart = buildCart(10L, user);
+        Product product = buildProduct(1L, ProductType.READY_MADE, ProductStatus.ACTIVE, new BigDecimal("20.00"));
+        CartItem item = buildCartItem(100L, cart, product, 1);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(cartRepository.findByUserId(1L)).thenReturn(Optional.of(cart));
+        when(cartItemRepository.findByCartIdAndProductId(10L, 1L)).thenReturn(Optional.of(item));
+        AddCartItemRequest dto = new AddCartItemRequest();
+        dto.setProductId(1L);
+        dto.setQuantity(Integer.MAX_VALUE);
+        assertThatThrownBy(() -> cartService.addItem(user, dto)).isInstanceOf(IllegalArgumentException.class);
+        verify(cartItemRepository, never()).save(any());
+        assertThat(item.getQuantity()).isEqualTo(1);
+    }
+
 }

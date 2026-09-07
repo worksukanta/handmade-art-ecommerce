@@ -74,9 +74,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (JwtException | UsernameNotFoundException ex) {
+        } catch (JwtException | UsernameNotFoundException | IllegalArgumentException ex) {
             // Token is invalid or expired — log at debug level (no sensitive data)
-            log.debug("JWT authentication failed: {}", ex.getMessage());
+            log.debug("JWT authentication failed");
         }
 
         filterChain.doFilter(request, response);

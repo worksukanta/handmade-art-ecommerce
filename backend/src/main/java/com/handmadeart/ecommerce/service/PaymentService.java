@@ -84,7 +84,7 @@ public class PaymentService {
 
         // Step 1: Resolve and verify order ownership
         CustomerOrder order = customerOrderRepository
-                .findByUserIdAndId(currentUser.getId(), orderId)
+                .findOwnedForPayment(currentUser.getId(), orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         // Step 2: Verify the order is payable (must be PENDING_PAYMENT)

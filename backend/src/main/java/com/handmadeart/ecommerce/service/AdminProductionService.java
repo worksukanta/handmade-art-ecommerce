@@ -188,6 +188,14 @@ public class AdminProductionService {
         ShipmentStatus next = statusReq.getStatus();
         validateShipmentTransition(current, next);
 
+        // A shipment must not bypass production or rewind a parent advanced through its own endpoint.
+        if (shipment.getCustomOrderRequest() != null) {
+            CustomOrderRequestStatus parent = shipment.getCustomOrderRequest().getStatus();
+            CustomOrderRequestStatus target = next == ShipmentStatus.SHIPPED
+                    ? CustomOrderRequestStatus.SHIPPED : CustomOrderRequestStatus.DELIVERED;
+            if (parent != target) validateAdminProductionTransition(parent, target);
+        }
+
         shipment.setStatus(next);
         if (next == ShipmentStatus.SHIPPED) {
             shipment.setShippedAt(OffsetDateTime.now());

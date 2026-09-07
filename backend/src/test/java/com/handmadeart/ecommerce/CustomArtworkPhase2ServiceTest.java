@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 /**
@@ -366,7 +367,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
         when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
         when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(q));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
@@ -398,7 +399,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
         when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
         when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(q));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
@@ -428,7 +429,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
         when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
         when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(q));
         when(paymentRepository.save(any())).thenAnswer(inv -> {
@@ -460,7 +461,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
         when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of());
         when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(q));
         when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> {
@@ -492,7 +493,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
 
         assertThatThrownBy(() -> advancePaymentService.initiateAdvancePayment(customer, 10L, payReq))
                 .isInstanceOf(InvalidWorkflowTransitionException.class)
@@ -513,7 +514,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(10L)).thenReturn(Optional.of(req));
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
         when(paymentRepository.findByCustomOrderRequestId(10L)).thenReturn(List.of(existingSuccess));
 
         assertThatThrownBy(() -> advancePaymentService.initiateAdvancePayment(customer, 10L, payReq))
@@ -535,7 +536,7 @@ class CustomArtworkPhase2ServiceTest {
         PaymentInitiationRequest payReq = new PaymentInitiationRequest();
         payReq.setPaymentMethod("CARD");
 
-        when(requestRepository.findById(20L)).thenReturn(Optional.of(foreignReq));
+        when(requestRepository.findOwnedForPayment(1L, 20L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> advancePaymentService.initiateAdvancePayment(customer, 20L, payReq))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -916,4 +917,38 @@ class CustomArtworkPhase2ServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Custom request not found");
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = CustomOrderRequestStatus.class,
+            names = {"REQUESTED", "APPROVED", "IN_PRODUCTION", "REJECTED", "DELIVERED"})
+    void shipmentCannotSkipOrRewindCustomProduction(CustomOrderRequestStatus parentStatus) {
+        CustomOrderRequest req = buildRequest(10L, buildCustomer(1L), parentStatus);
+        Shipment shipment = buildShipment(300L, req, ShipmentStatus.PENDING);
+        when(shipmentRepository.findById(300L)).thenReturn(Optional.of(shipment));
+        ShipmentStatusUpdateRequest dto = new ShipmentStatusUpdateRequest();
+        dto.setStatus(ShipmentStatus.SHIPPED);
+        assertThatThrownBy(() -> adminProductionService.updateShipmentStatus(300L, dto))
+                .isInstanceOf(InvalidWorkflowTransitionException.class);
+        assertThat(shipment.getStatus()).isEqualTo(ShipmentStatus.PENDING);
+        assertThat(req.getStatus()).isEqualTo(parentStatus);
+        verify(shipmentRepository, never()).save(any());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullSource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"0", "-1", "500.01"})
+    void paymentRejectsLegacyInvalidAdvance(String amount) {
+        AppUser customer = buildCustomer(1L);
+        CustomOrderRequest req = buildRequest(10L, customer, CustomOrderRequestStatus.APPROVED);
+        when(requestRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(req));
+        Quotation quote = buildQuotation(100L, req, QuotationStatus.APPROVED,
+                OffsetDateTime.now().plusDays(7), amount == null ? null : new BigDecimal(amount));
+        when(quotationRepository.findByCustomOrderRequestId(10L)).thenReturn(Optional.of(quote));
+        PaymentInitiationRequest dto = new PaymentInitiationRequest();
+        dto.setPaymentMethod("SANDBOX");
+        assertThatThrownBy(() -> advancePaymentService.initiateAdvancePayment(customer, 10L, dto))
+                .isInstanceOf(InvalidWorkflowTransitionException.class);
+        verify(paymentRepository, never()).save(any());
+        assertThat(req.getStatus()).isEqualTo(CustomOrderRequestStatus.APPROVED);
+    }
+
 }

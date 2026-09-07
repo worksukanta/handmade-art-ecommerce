@@ -385,4 +385,52 @@ class SecurityAuthorizationTest {
         user.setRole(com.handmadeart.ecommerce.entity.UserRole.valueOf(role));
         return com.handmadeart.ecommerce.dto.auth.UserResponse.from(user);
     }
+    @Test
+    void emptyBearerTokenReturnsNormalized401() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer "))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    void malformedJsonReturnsSafe400() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/auth/login")
+                        .contentType("application/json").content("{\"password\":\"sensitive-input\","))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_PARAMETER"))
+                .andExpect(jsonPath("$.message").value("Request body or parameters are invalid"));
+    }
+
+    @Test
+    void invalidPathIdentifierReturnsSafe400() throws Exception {
+        mockMvc.perform(get("/api/v1/products/not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_PARAMETER"));
+    }
+
+    @Test
+    void productSvgResponseIsSandboxedAndCannotBeSniffed() throws Exception {
+        byte[] bytes = "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>".getBytes();
+        when(productImageContentService.getPublicImage(7L))
+                .thenReturn(new ProductImageContentService.ProductImageContent(bytes,
+                        org.springframework.http.MediaType.parseMediaType("image/svg+xml")));
+        mockMvc.perform(get("/api/v1/product-images/7/content"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Security-Policy", "sandbox; default-src 'none'"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"));
+    }
+
+    @Test
+    void protectedReferenceResponseIsSandboxedAndNotCached() throws Exception {
+        when(appUserDetailsService.loadUserByUsername(anyString())).thenReturn(customerDetails("alice@example.com"));
+        when(customOrderImageContentService.getImage(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(7L)))
+                .thenReturn(new CustomOrderImageContentService.ImageContent(new byte[]{1},
+                        org.springframework.http.MediaType.IMAGE_PNG));
+        mockMvc.perform(get("/api/v1/custom-request-images/7/content")
+                        .header("Authorization", "Bearer " + customerToken("alice@example.com")))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Security-Policy", "sandbox; default-src 'none'"))
+                .andExpect(header().string("Cache-Control", "no-store"));
+    }
+
 }

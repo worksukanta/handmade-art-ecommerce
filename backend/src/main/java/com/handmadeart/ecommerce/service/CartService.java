@@ -148,6 +148,9 @@ public class CartService {
         if (existingItem.isPresent()) {
             // Accumulate quantity
             CartItem item = existingItem.get();
+            if (requestedQty > Integer.MAX_VALUE - item.getQuantity()) {
+                throw new IllegalArgumentException("Combined quantity is too large");
+            }
             int newQty = item.getQuantity() + requestedQty;
             checkStockAvailability(product, newQty);
             item.setQuantity(newQty);

@@ -26,4 +26,22 @@ class GlobalExceptionHandlerTest {
         assertThat(body.getMessage()).isEqualTo("Uploaded file exceeds the configured size limit");
         assertThat(body.getPath()).isEqualTo("/api/v1/custom-requests/10/images");
     }
+    @Test
+    void databaseConstraintDetailsAreNotExposed() {
+        var response = new GlobalExceptionHandler().handleDataConflict(
+                new org.springframework.dao.DataIntegrityViolationException("SQL insert password_hash internal path"),
+                new MockHttpServletRequest("POST", "/api/v1/account/addresses"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().getMessage()).isEqualTo("Request conflicts with existing data or constraints");
+    }
+
+    @Test
+    void unexpectedFailureDoesNotExposeInternalDetails() {
+        var response = new GlobalExceptionHandler().handleUnexpected(
+                new RuntimeException("SQL password_hash internal path"),
+                new MockHttpServletRequest("GET", "/api/v1/products"));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody().getMessage()).isEqualTo("An unexpected error occurred");
+    }
+
 }

@@ -28,6 +28,7 @@ public class CustomOrderImageController {
         AppUser currentUser = currentUserService.getAuthenticatedUser();
         ImageContent content = contentService.getImage(currentUser, imageId);
         return ResponseEntity.ok()
+                .header("Content-Security-Policy", "sandbox; default-src 'none'")
                 .contentType(content.contentType())
                 .contentLength(content.bytes().length)
                 .cacheControl(CacheControl.noStore())

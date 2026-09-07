@@ -704,7 +704,23 @@ class CustomArtworkServiceTest {
     private QuotationCreateRequest buildQuotationCreateRequest() {
         QuotationCreateRequest req = new QuotationCreateRequest();
         req.setQuotedAmount(new BigDecimal("500.00"));
+        req.setAdvanceAmount(new BigDecimal("150.00"));
         req.setExpiryAt(OffsetDateTime.now().plusDays(7));
         return req;
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullSource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"0", "-1", "500.01"})
+    void quotationRejectsInvalidAdvanceBeforeSaving(String amount) {
+        AppUser customer = buildCustomer(1L);
+        CustomOrderRequest request = buildRequest(10L, customer, CustomOrderRequestStatus.UNDER_REVIEW);
+        when(requestRepository.findById(10L)).thenReturn(Optional.of(request));
+        QuotationCreateRequest dto = buildQuotationCreateRequest();
+        dto.setAdvanceAmount(amount == null ? null : new BigDecimal(amount));
+        assertThatThrownBy(() -> quotationService.createQuotation(buildAdmin(99L), 10L, dto))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Advance amount");
+        verify(quotationRepository, never()).save(any());
+        assertThat(request.getStatus()).isEqualTo(CustomOrderRequestStatus.UNDER_REVIEW);
+    }
+
 }

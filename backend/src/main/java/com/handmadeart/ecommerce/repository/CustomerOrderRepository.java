@@ -5,6 +5,10 @@ import com.handmadeart.ecommerce.entity.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +19,12 @@ import java.util.Optional;
  * Approved operations: FR-ORD-01..09, UC-007, UC-009, UC-010, UC-018.
  */
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
+
+    /** Serialize payment attempts before inspecting the authoritative payable state. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM CustomerOrder o WHERE o.user.id = :userId AND o.id = :id")
+    java.util.Optional<CustomerOrder> findOwnedForPayment(@Param("userId") Long userId, @Param("id") Long id);
+
 
     /**
      * Find all orders for a customer, paginated — 'My Orders' history view (UC-009).

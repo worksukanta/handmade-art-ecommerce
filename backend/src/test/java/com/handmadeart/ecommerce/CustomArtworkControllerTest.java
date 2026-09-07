@@ -408,6 +408,7 @@ class CustomArtworkControllerTest {
 
         QuotationCreateRequest createReq = new QuotationCreateRequest();
         createReq.setQuotedAmount(new BigDecimal("500.00"));
+        createReq.setAdvanceAmount(new BigDecimal("150.00"));
         createReq.setExpiryAt(OffsetDateTime.now().plusDays(7));
 
         mockMvc.perform(post("/api/v1/admin/custom-requests/10/quotation")

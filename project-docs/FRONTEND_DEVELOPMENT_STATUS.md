@@ -2,11 +2,20 @@
 
 ## Current state
 
-- Frontend status: **PHASE 5B.1 IMPLEMENTED; MANUAL RESPONSIVE VERIFICATION PENDING**
+- Frontend status: **PHASE 5C AUDIT COMPLETE; MANUAL RESPONSIVE REVIEW ACCEPTED BY USER**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-5b-e2e-regression`
+- Current audit branch: `phase-5c-final-hardening`
 - Current milestone: Phase 5B — Full E2E and regression verification
 - `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and the end-to-end customer/Admin custom-artwork workflow through delivery
+
+## Phase 5C final audit
+
+- Frontend source, API DTOs, dependencies, navigation and appearance unchanged. Shared `VITE_API_BASE_URL` configuration, JWT storage/401 cleanup, auth/role guards, page loading/error states and protected image retrieval reviewed. No sensitive console logging, developer filesystem paths or debug-only visible controls found.
+- Backend hardening now enforces the already approved positive fixed advance at quotation creation/payment, serializes payment attempts, prevents custom shipment workflow bypass, contains active image responses with a sandbox CSP, normalizes malformed-input/constraint errors and rejects empty Bearer tokens safely. Full details and limitations are in `DEVELOPMENT_STATUS.md`.
+- Verification: `npm run test:run -- --pool=threads --maxWorkers=1` PASS, **65 tests / 9 files**, exit 0; `npm run build` PASS, 142 modules; `npm run lint` PASS, exit 0 with no warnings/errors. Two prior runs completed 53 tests but timed out starting one worker. The final CMD run without concurrent builds completed all files; no test configuration or assertions were weakened. Backend `mvn clean test`: **402 tests passed**, zero failures/errors/skips, BUILD SUCCESS.
+- Manual/responsive review is accepted according to the user's Phase 5C request. Earlier entries accurately describe historical agent browser limitations; this phase did not repeat live browser or API journeys.
+- DEC-002 remains OPEN with client-side logout accepted for MVP. DEC-003/006 are DEFERRED for final upload policy/cancellation; provider integration and automated browser E2E remain DEFERRED. No unimplemented feature is claimed complete.
+- Before the next backend startup, explicitly supply `JWT_SECRET` and `DB_PASSWORD`; unsafe fallback values were removed. Actual `.env` files remain ignored and unchanged. Next phase: clean database reconstruction, then public README/demo preparation. Neither was performed here.
 
 ## Approved frontend stack and setup facts
 

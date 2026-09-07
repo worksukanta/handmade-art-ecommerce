@@ -90,7 +90,7 @@ public class JwtService {
             String email = extractEmail(token);
             return email.equalsIgnoreCase(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (JwtException ex) {
-            log.debug("JWT validation failed: {}", ex.getMessage());
+            log.debug("JWT validation failed");
             return false;
         }
     }

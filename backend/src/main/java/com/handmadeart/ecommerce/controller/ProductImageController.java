@@ -26,6 +26,7 @@ public class ProductImageController {
     public ResponseEntity<byte[]> getImageContent(@PathVariable Long imageId) {
         ProductImageContent content = productImageContentService.getPublicImage(imageId);
         return ResponseEntity.ok()
+                .header("Content-Security-Policy", "sandbox; default-src 'none'")
                 .contentType(content.contentType())
                 .contentLength(content.bytes().length)
                 .cacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())

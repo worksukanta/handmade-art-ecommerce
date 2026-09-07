@@ -32,6 +32,21 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class})
+    public ResponseEntity<ApiError> handleMalformedRequest(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(new ApiError(400, "INVALID_PARAMETER",
+                "Request body or parameters are invalid", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataConflict(Exception ex, HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError(409, "CONFLICT",
+                "Request conflicts with existing data or constraints", request.getRequestURI()));
+    }
+
     // -------------------------------------------------------------------------
     // 400 — Validation failures and bad request parameters
     // -------------------------------------------------------------------------

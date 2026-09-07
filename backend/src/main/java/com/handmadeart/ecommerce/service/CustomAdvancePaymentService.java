@@ -94,7 +94,8 @@ public class CustomAdvancePaymentService {
                                                    PaymentInitiationRequest request) {
 
         // Step 1: Resolve and verify ownership
-        CustomOrderRequest req = resolveOwnedRequest(currentUser, requestId);
+        CustomOrderRequest req = requestRepository.findOwnedForPayment(currentUser.getId(), requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Custom request not found"));
 
         // Step 2: Verify the request is in APPROVED state (valid for advance payment)
         if (req.getStatus() != CustomOrderRequestStatus.APPROVED) {
@@ -118,9 +119,10 @@ public class CustomAdvancePaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Quotation not found for custom request " + requestId));
 
-        if (quotation.getAdvanceAmount() == null) {
+        if (quotation.getAdvanceAmount() == null || quotation.getAdvanceAmount().signum() <= 0
+                || quotation.getAdvanceAmount().compareTo(quotation.getQuotedAmount()) > 0) {
             throw new InvalidWorkflowTransitionException(
-                    "Cannot process advance payment: quotation has no advance amount defined");
+                    "Cannot process advance payment: quotation advance amount is invalid");
         }
 
         // Step 5: Create advance payment record (DEC-001 sandbox — no real provider call)

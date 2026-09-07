@@ -117,7 +117,11 @@ public class QuotationService {
         Quotation quotation = new Quotation();
         quotation.setCustomOrderRequest(req);
         quotation.setQuotedAmount(createReq.getQuotedAmount());
-        quotation.setAdvanceAmount(createReq.getAdvanceAmount());     // nullable; DEC-005 OPEN
+        if (createReq.getAdvanceAmount() == null || createReq.getAdvanceAmount().signum() <= 0
+                || createReq.getAdvanceAmount().compareTo(createReq.getQuotedAmount()) > 0) {
+            throw new IllegalArgumentException("Advance amount must be greater than zero and must not exceed quoted amount");
+        }
+        quotation.setAdvanceAmount(createReq.getAdvanceAmount()); // DEC-005 APPROVED
         quotation.setEstimatedDeliveryDate(createReq.getEstimatedDeliveryDate());
         quotation.setExpiryAt(createReq.getExpiryAt());
         quotation.setNotesTerms(createReq.getNotesTerms());

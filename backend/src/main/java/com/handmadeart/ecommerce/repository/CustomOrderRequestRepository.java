@@ -5,6 +5,10 @@ import com.handmadeart.ecommerce.entity.CustomOrderRequestStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 
@@ -19,6 +23,12 @@ import java.util.List;
  * filtering (UC-012, ERD §17).
  */
 public interface CustomOrderRequestRepository extends JpaRepository<CustomOrderRequest, Long> {
+
+    /** Serialize payment attempts before inspecting the authoritative payable state. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM CustomOrderRequest r WHERE r.user.id = :userId AND r.id = :id")
+    java.util.Optional<CustomOrderRequest> findOwnedForPayment(@Param("userId") Long userId, @Param("id") Long id);
+
 
     /**
      * Find all custom requests for a given customer.

@@ -122,7 +122,7 @@ class PaymentServiceTest {
         CustomerOrder order = buildOrder(10L, user, OrderStatus.PENDING_PAYMENT,
                 new BigDecimal("100.00"));
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(customerOrderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -152,7 +152,7 @@ class PaymentServiceTest {
         BigDecimal storedTotal = new BigDecimal("185.50");
         CustomerOrder order = buildOrder(10L, user, OrderStatus.PENDING_PAYMENT, storedTotal);
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(customerOrderRepository.save(any())).thenReturn(order);
 
@@ -174,7 +174,7 @@ class PaymentServiceTest {
     void initiatePayment_foreignOrderId_throwsResourceNotFoundException() {
         AppUser user = buildCustomer(1L);
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 999L)).thenReturn(Optional.empty());
+        when(customerOrderRepository.findOwnedForPayment(1L, 999L)).thenReturn(Optional.empty());
 
         PaymentInitiationRequest req = new PaymentInitiationRequest();
         req.setPaymentMethod("SANDBOX");
@@ -194,7 +194,7 @@ class PaymentServiceTest {
         AppUser user = buildCustomer(1L);
         CustomerOrder order = buildOrder(10L, user, OrderStatus.CONFIRMED, new BigDecimal("50.00"));
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
 
         PaymentInitiationRequest req = new PaymentInitiationRequest();
         req.setPaymentMethod("SANDBOX");
@@ -213,7 +213,7 @@ class PaymentServiceTest {
         AppUser user = buildCustomer(1L);
         CustomerOrder order = buildOrder(10L, user, OrderStatus.CANCELLED, new BigDecimal("50.00"));
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
 
         PaymentInitiationRequest req = new PaymentInitiationRequest();
         req.setPaymentMethod("SANDBOX");
@@ -271,7 +271,7 @@ class PaymentServiceTest {
         CustomerOrder order = buildOrder(10L, user, OrderStatus.PENDING_PAYMENT,
                 new BigDecimal("60.00"));
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(customerOrderRepository.save(any())).thenReturn(order);
 
@@ -299,7 +299,7 @@ class PaymentServiceTest {
         CustomerOrder order = buildOrder(10L, user, OrderStatus.PENDING_PAYMENT,
                 new BigDecimal("40.00"));
 
-        when(customerOrderRepository.findByUserIdAndId(1L, 10L)).thenReturn(Optional.of(order));
+        when(customerOrderRepository.findOwnedForPayment(1L, 10L)).thenReturn(Optional.of(order));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(customerOrderRepository.save(any())).thenReturn(order);
 

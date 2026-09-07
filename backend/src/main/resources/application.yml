@@ -12,7 +12,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/handmade_art_ecommerce}
     username: ${DB_USERNAME:handmadeart_user}
-    password: ${DB_PASSWORD:changeme}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -46,12 +46,11 @@ server:
   port: 8080
 
 # JWT configuration for stateless authentication (Phase 3A).
-# app.jwt.secret must be overridden in production via environment variable or secrets manager.
-# The default here is a development placeholder only — never use it in production.
+# Supply app.jwt.secret via JWT_SECRET; no shared development signing key is allowed.
 # Minimum recommended key size for HS256: 256 bits (32 bytes), encoded as Base64.
 app:
   jwt:
-    secret: ${JWT_SECRET:ZGV2LW9ubHktcGxhY2Vob2xkZXItc2VjcmV0LWtleS1mb3ItaGFuZG1hZGVhcnQ=}
+    secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   upload:
     product-images: ${UPLOAD_PRODUCT_IMAGES_DIR:uploads/product-images}
