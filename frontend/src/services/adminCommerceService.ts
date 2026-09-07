@@ -15,6 +15,7 @@ export const adminCommerceService = {
   async updateCategory(id: number, name: string, description: string | null): Promise<AdminCategory> { return (await apiClient.put(`/admin/categories/${id}`, { name, description })).data },
   async setCategoryStatus(id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> { await apiClient.patch(`/admin/categories/${id}/status`, { status }) },
   async listInventory(page = 0, size = 20): Promise<InventoryPage> { return (await apiClient.get('/admin/inventory', { params: { page, size } })).data },
+  async getInventory(productId: number): Promise<Inventory> { return (await apiClient.get(`/admin/inventory/${productId}`)).data },
   async updateInventory(productId: number, availableQuantity: number): Promise<Inventory> { return (await apiClient.patch(`/admin/inventory/${productId}`, { availableQuantity })).data },
   async listOrders(page = 0, size = 20): Promise<AdminOrderPage> { return (await apiClient.get('/admin/orders', { params: { page, size } })).data },
   async getOrder(id: number): Promise<AdminOrder> { return (await apiClient.get(`/admin/orders/${id}`)).data },

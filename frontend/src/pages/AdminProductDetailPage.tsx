@@ -21,7 +21,7 @@ export function AdminProductDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(
-    created ? 'Product created successfully. You can now upload product images.' : null
+    created ? 'Product created successfully. Upload images, set inventory for tracked products, then activate when ready.' : null
   )
   const [file, setFile] = useState<File | null>(null)
   const [relatedId, setRelatedId] = useState('')
@@ -99,6 +99,12 @@ export function AdminProductDetailPage() {
       </div>
       {error && <p className="form-alert form-alert-error" role="alert">{error}</p>}
       {message && <p className="form-alert form-alert-success" role="status">{message}</p>}
+      {product.product_type !== 'PORTFOLIO_ONLY' && <section className="detail-panel" aria-labelledby="inventory-heading">
+        <h2 id="inventory-heading">Inventory setup</h2>
+        <p>Upload images, set stock, then activate the product when ready.</p>
+        <p>Current stock: {product.availability.quantity_on_hand ?? 'See inventory'}</p>
+        <Link className="button button-primary" to={`/admin/inventory?productId=${id}`}>Manage inventory</Link>
+      </section>}
       <div className="admin-detail-grid">
         <div className="detail-panel">
           <h2>Catalogue details</h2>

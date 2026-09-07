@@ -25,6 +25,8 @@ export function CataloguePage() {
   const [error, setError] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '')
   const [requestVersion, setRequestVersion] = useState(0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const filterCount = ['categoryId', 'minPrice', 'maxPrice'].filter((key) => searchParams.has(key)).length
 
   const requestParams = useMemo<ProductListParams>(() => ({
     q: searchParams.get('q') || undefined,
@@ -78,7 +80,8 @@ export function CataloguePage() {
 
   const clearFilters = () => {
     const next = new URLSearchParams()
-    if (searchParamsEqual(next, searchParams) && searchInput === '') return
+    setSearchInput('')
+    if (searchParamsEqual(next, searchParams)) return
     setIsLoading(true)
     setError(null)
     setSearchInput('')
@@ -101,6 +104,8 @@ export function CataloguePage() {
             <button className="button button-primary" type="submit">Search</button>
           </div>
         </div>
+        <button className="button button-secondary filters-toggle" type="button" aria-expanded={filtersOpen} aria-controls="secondary-filters" onClick={() => setFiltersOpen(!filtersOpen)}>Filters{filterCount ? ` (${filterCount})` : ''}</button>
+        <div id="secondary-filters" className={filtersOpen ? 'secondary-filters is-open' : 'secondary-filters'}>
         <div className="filter-field">
           <label htmlFor="category-filter">Category</label>
           <select id="category-filter" value={searchParams.get('categoryId') ?? ''} onChange={(event) => updateFilters({ categoryId: event.target.value || undefined })}>
@@ -130,6 +135,7 @@ export function CataloguePage() {
           </select>
         </div>
         <button className="button button-secondary filter-clear" type="button" onClick={clearFilters}>Clear filters</button>
+        </div>
       </form>
 
       {isLoading && <LoadingState label="Loading catalogue" cards />}

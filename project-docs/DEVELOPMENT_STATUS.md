@@ -1,5 +1,11 @@
 # DEVELOPMENT STATUS
 
+## Phase 5B runtime and regression verification
+
+The real backend connected successfully to PostgreSQL 18.4 using `handmade_art_ecommerce`. Flyway validated all five migrations and reported schema version 5 current. The opt-in development seeder created a dedicated local ADMIN and remained compatible with repeat startup; production-safe default remains disabled. Live unmocked standard-commerce and custom-artwork workflows completed through payment, production, shipment, and delivery using order 467 and custom request 718. Authentication/authorization, protected image ownership, inventory decrement, catalogue visibility, ADMIN catalogue/category/inventory operations, CORS, and normalized 400/401/403/404/409/413 responses were verified. No backend contract defect or code fix was required.
+
+`mvn clean test`: 381 tests passed, 0 failures, 0 errors, 0 skipped — BUILD SUCCESS.
+
 ## Phase 4H targeted ADMIN discovery contract completion
 
 The four refresh-safety gaps identified before the Phase 4H frontend were completed with read-only ADMIN contracts. `GET /api/v1/admin/products` remains paginated but now returns `AdminProductSummaryResponse`, preserving the existing summary fields and adding authoritative `status`; its repository query continues to include both ACTIVE and INACTIVE products. `GET /api/v1/admin/products/{productId}` returns `AdminProductDetailResponse` for either status without using the public ACTIVE-only query. The response includes the editable product fields, status, category, image metadata/content URLs, existing availability data, status-aware related-product summaries, and timestamps; unknown IDs use the normalized 404 response.

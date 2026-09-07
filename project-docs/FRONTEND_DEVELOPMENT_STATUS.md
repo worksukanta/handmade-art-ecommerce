@@ -2,10 +2,10 @@
 
 ## Current state
 
-- Frontend status: **PHASE 5A COMPLETED / FRONTEND AUTOMATED TESTING ESTABLISHED**
+- Frontend status: **PHASE 5B.1 IMPLEMENTED; MANUAL RESPONSIVE VERIFICATION PENDING**
 - Backend status: **COMPLETE / API baseline frozen** (except endpoints explicitly blocked by open/deferred decisions)
-- Frontend branch: `phase-5a-frontend-tests`
-- Current milestone: Phase 5A — Frontend automated testing
+- Frontend branch: `phase-5b-e2e-regression`
+- Current milestone: Phase 5B — Full E2E and regression verification
 - `frontend/` state: Vite React + TypeScript application covering public browsing, standard customer commerce, and the end-to-end customer/Admin custom-artwork workflow through delivery
 
 ## Approved frontend stack and setup facts
@@ -19,6 +19,33 @@
 - State: React built-in state and Context are sufficient; no external state-management library is approved or required
 - Component testing: Vitest + React Testing Library + jest-dom + user-event in jsdom (DEC-011 APPROVED)
 - CSS/UI library and visual theme: **UNDECIDED**
+
+## Phase 5B.1 responsive UX and admin workflow corrections
+
+- Navigation: compact sticky header at widths up to 48rem, CUSTOMER cart shortcut, labelled keyboard-operable menu toggle with aria-expanded/aria-controls, in-flow expandable panel, route-selection close and Escape handling. Desktop CUSTOMER Account grouping contains Profile, Addresses and Sign out; ADMIN grouping contains Products, Categories, Inventory, Orders and Custom requests. Existing auth/role guards remain unchanged.
+- Catalogue: search stays visible; secondary category/price/sort controls collapse behind Filters on narrow screens and remain expanded on desktop. Category/min/max active-filter count is shown. Opening the panel causes no API request. Equivalent Search/Clear remain no-ops; clearing unsubmitted search text now resets only the input without starting a loading state or request.
+- Create Category: explicit submit type and existing primary-button classes correct the unstyled action.
+- Product form overlap: grid labels/selects retained intrinsic minimum widths; selects also lacked the width constraint applied to text inputs. Shared admin-form CSS now permits labels and controls to shrink, constrains controls to their cells, and preserves the mobile single-column breakpoint. No product fields or DTOs changed.
+- Product workflow: tracked products show Inventory setup with stock, workflow guidance and a prominent Manage inventory link to /admin/inventory?productId=<id>. This focused view uses the existing approved GET /admin/inventory/{productId}, including for products outside the first list page. PORTFOLIO_ONLY products do not show stock management. Creation still uses the accepted ProductRequest without initialInventory.
+- Inventory: Save changed submits dirty rows on the current page through individual existing PATCH requests. Individual Save remains available. Validation and an immediate submission lock prevent invalid/duplicate submissions; inputs and pagination are disabled during saving. Pagination is also disabled while edits remain unsaved. Promise.allSettled retains partial-success information: each successful authoritative response replaces only its own row and becomes clean; failures show row-specific alerts and retain editable dirty values for retry. Successful rows are never rolled back. This is not an atomic/transactional batch.
+- Focused tests: navigation toggle/keyboard/Escape/route close and anonymous/CUSTOMER/ADMIN visibility; filter toggle and no-op Search/Clear including unsubmitted text; dirty-only stock updates, authoritative successful values, partial failure/retry, focused inventory loading and duplicate prevention; ADMIN product inventory discovery. Existing individual Save and validation tests retained; inventory fixtures now supply valid server-format timestamps.
+- Automated verification: npm run test:run PASS, 9 files / 55 tests. Initial sandbox worker startup timed out before tests; an authorized outside-sandbox run executed the suite. Invalid mock timestamps found during that run were corrected before the final passing run. npm run build PASS; npm run lint PASS, 0 warnings/errors. git diff --check PASS.
+- Manual responsive verification: BLOCKED. Computer-use discovery returned no apps or browsers. Mobile/tablet/desktop visual checks of navigation, filters, Create Product, Create Category, inventory and product detail could not be performed. No visual assertion of zero overlap/overflow, touch-target usability or sticky-content clearance is claimed; browser sign-off remains required before Phase 5C.
+- Backend, API contracts, dependencies and branch unchanged. Changes remain unstaged/uncommitted. Pre-existing changes to DEVELOPMENT_STATUS.md and DECISION_LOG.md were preserved without editing them during this pass.
+
+## Phase 5B verification
+
+- Environment: PostgreSQL 18.4 available at the approved `handmade_art_ecommerce` database; backend responded on `http://localhost:8080`; frontend responded on `http://localhost:5173`; CORS preflight returned `Access-Control-Allow-Origin: http://localhost:5173`. A seeder-enabled temporary backend startup on port 8081 verified all five Flyway migrations at schema version 5 and created a dedicated local ADMIN through the opt-in, idempotent development seeder; that extra instance was then stopped.
+- Anonymous/API regression: public catalogue returned seven products; READY_MADE product 574 detail and image content returned 200; unknown product returned normalized 404; anonymous cart and ADMIN access returned 401.
+- Authentication/security: CUSTOMER registration/login and `/auth/me` restoration succeeded; invalid JWT returned 401; CUSTOMER access to ADMIN APIs returned 403; a second CUSTOMER received non-disclosing 404 responses for another customer's request and protected image.
+- Standard commerce: READY_MADE product 574 was added and updated to quantity two; server total was 298.00; CUSTOM_AVAILABLE and PORTFOLIO_ONLY cart attempts returned 409; owned address 276 was created/listed; validation succeeded; order 467 was created and cleared the cart; FULL sandbox payment succeeded and duplicate payment returned 409; ADMIN payment history contained the payment; order and shipment progressed through their supported lifecycles to DELIVERED with tracking `STD-1788516905`.
+- Inventory: product 574 authoritative stock decreased from 3 to 1 after the two-unit order; public availability remained in stock and no negative stock occurred.
+- Custom artwork: request 718 was created with a real PNG reference image (image 103); owning CUSTOMER and ADMIN binary reads returned 200; request moved REQUESTED -> UNDER_REVIEW -> QUOTED -> APPROVED -> IN_PRODUCTION -> COMPLETED -> SHIPPED -> DELIVERED; quotation exposed fixed advance 400.00; ADVANCE sandbox payment succeeded and duplicate payment returned 409; final tracking was `ART-1788516905`; protected image remained readable after a later authenticated reload.
+- ADMIN management: category 637 was created, listed, edited, deactivated, excluded from the public category list, then reactivated. Product 582 was created, received an image, was edited, related to product 574, assigned stock 4, activated and publicly readable, then deactivated and publicly returned 404; its image was removed. Negative inventory returned normalized 400.
+- Error regression: live normalized responses were verified for 400, 401, 403, 404, 409, and 413. An oversized multipart upload returned the structured `UPLOAD_TOO_LARGE` 413 response rather than a stack trace.
+- Automated verification: backend `mvn clean test` — PASS (381 tests, 0 failures/errors/skips); frontend `npm run test:run` — PASS (8 files, 48 tests); `npm run build` — PASS; `npm run lint` — PASS with 0 warnings/errors.
+- Browser limitation: no controllable browser surface was available. Therefore responsive layouts, keyboard focus/Tab behavior, live lightbox interactions, logout/re-login UI, login return-path UI, success-page wording, and Search/Clear request/loading-flash behavior were not manually claimed. These remain covered where applicable by the accepted Phase 5A behavior tests, but require a connected browser for visual runtime sign-off.
+- Defects: no application defect requiring a code change was found. The initial public read of a newly uploaded image correctly returned 404 while its product was still INACTIVE; activation made it available as designed. DEC-012 is DEFERRED rather than adding Playwright/Cypress solely for this phase.
 
 ## Phase 5A verification
 

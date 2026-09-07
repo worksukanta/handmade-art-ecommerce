@@ -18,6 +18,11 @@ describe('catalogue search regression', () => {
   it('does not fetch again for equivalent empty Search or already-clear Clear', async () => {
     renderWithRouter(<CataloguePage />)
     await waitFor(() => expect(catalogueService.listProducts).toHaveBeenCalledTimes(1))
+    const toggle = screen.getByRole('button', { name: 'Filters' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(toggle)
     await userEvent.click(screen.getByRole('button', { name: 'Search' }))
     await userEvent.click(screen.getAllByRole('button', { name: 'Clear filters' })[0])
     expect(catalogueService.listProducts).toHaveBeenCalledTimes(1)
@@ -28,6 +33,15 @@ describe('catalogue search regression', () => {
     await userEvent.type(screen.getByLabelText('Search artwork'), 'ocean')
     await userEvent.click(screen.getByRole('button', { name: 'Search' }))
     await waitFor(() => expect(catalogueService.listProducts).toHaveBeenCalledTimes(2))
+  })
+  it('clears an unsubmitted search without fetching or getting stuck loading', async () => {
+    renderWithRouter(<CataloguePage />)
+    await screen.findByText('No products match your filters')
+    await userEvent.type(screen.getByLabelText('Search artwork'), 'draft')
+    await userEvent.click(screen.getAllByRole('button', { name: 'Clear filters' })[0])
+    expect(screen.getByLabelText('Search artwork')).toHaveValue('')
+    expect(catalogueService.listProducts).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('No products match your filters')).toBeInTheDocument()
   })
 })
 

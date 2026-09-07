@@ -282,19 +282,19 @@ Implementation:
 
 ## DEC-012 — E2E Framework
 
-Status: OPEN
+Status: DEFERRED
 
-Issue:
+Decision:
 
-Playwright and Cypress are both acceptable according to the approved test strategy.
+No browser E2E framework is added for the MVP. Browser automation is deferred as a future enhancement.
 
-Decision Rule:
+Rationale:
 
-Select one only.
+The backend's 381-test automated suite, the focused 48-test Vitest/React Testing Library suite, and full live PostgreSQL/API workflow verification provide proportionate MVP regression confidence without adding another framework and browser-binary maintenance surface. Playwright or Cypress may be selected later if repeatable cross-browser UI journeys become a delivery requirement; only one should then be adopted.
 
-Decision Required Before:
+Scope:
 
-End-to-End test implementation.
+Automated browser E2E implementation beyond the MVP. Phase 5B used real frontend/backend availability checks and live, unmocked API workflows. Visual, responsive, keyboard, lightbox-interaction, login-return-path, and Search/Clear network-panel smoke checks were not claimed because no controllable browser surface was available.
 
 ---
 

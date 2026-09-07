@@ -48,7 +48,7 @@ export function AdminCategoriesPage() {
     <form className="commerce-form admin-form-grid" onSubmit={submit}>
       <label>Name<input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label>Description<input value={description} onChange={(event) => setDescription(event.target.value)} /></label>
-      <div className="form-actions"><button disabled={busy}>{editing !== null ? 'Save category' : 'Create category'}</button>{editing !== null && <button type="button" className="button button-secondary" onClick={resetForm}>Cancel</button>}</div>
+      <div className="form-actions"><button type="submit" className="button button-primary" disabled={busy}>{editing !== null ? 'Save category' : 'Create category'}</button>{editing !== null && <button type="button" className="button button-secondary" onClick={resetForm}>Cancel</button>}</div>
     </form>
     <div className="admin-table-wrap"><table className="admin-table">
       <thead><tr><th>Name</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
