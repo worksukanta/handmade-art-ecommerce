@@ -79,6 +79,15 @@ textarea { font: inherit; }
 }
 
 .nav-list a { text-underline-offset: 0.25rem; }
+.nav-list a[aria-current="page"], .mobile-header-actions a[aria-current="page"], .nav-group summary.is-active {
+  color: #7a3525;
+  background: #f3e7db;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25rem;
+  border-radius: 0.25rem;
+}
 
 .page-heading { max-width: 48rem; margin-bottom: 2rem; }
 .page-heading h1,

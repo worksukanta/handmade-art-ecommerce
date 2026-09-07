@@ -342,3 +342,16 @@ Begin Phase 4G — Admin Catalogue & Inventory. Keep DEC-001, DEC-002, DEC-003, 
 
 **Build:** `npm run build` — PASS (0 TypeScript errors, 140 modules transformed).
 **Lint:** `npm run lint` — PASS (0 warnings, 0 errors on 69 files with 116 rules).
+
+## Phase 5B.2 — Final navigation and dropdown UX corrections
+
+- Preserved the accepted responsive header, sticky styling, role-aware links, customer cart shortcut, native Account/Admin disclosures, and responsive catalogue filters.
+- Added shared lifecycle-safe pointer-outside/Escape handling in useDismiss. Trigger and content boundaries preserve normal toggling and internal interactions; listeners are removed on effect cleanup/unmount, including StrictMode. Native select controls are unchanged.
+- Account/Admin disclosures close on outside interaction, Escape, link/action selection, and route changes. Mobile navigation closes outside, on Escape, and on link navigation. Escape returns focus to the relevant trigger; focused nested disclosures handle Escape before the outer mobile menu.
+- Catalogue's collapsible filter panel closes outside and on Escape without changing filter/query behavior. Desktop filters retain their existing always-visible layout.
+- NavLink supplies aria-current="page" and segment-aware nested matching; Catalogue matches only /. Account and Admin use exact-or-slash-prefix matching for parent highlighting and aria-current="true". Active styling combines existing accent/background colors with weight and underline on desktop/mobile and dropdown children.
+- Accessibility: retained button labels, aria-controls, aria-expanded on mobile/filter buttons, and native details/summary disclosure semantics and expanded state.
+- Added 10 focused cases covering outside/inside interactions, trigger toggling, Escape/focus, StrictMode rendering/unmount, same-destination navigation, nested customer/admin routes, Account/Admin parents, unrelated prefixes, and filter dismissal without redundant requests.
+- Verification: all 65 tests across 9 files PASS using npm run test:run -- --pool=threads --maxWorkers=1. The requested default npm run test:run was attempted but fork-worker startup timed out intermittently (including outside the sandbox); the single-thread invocation completed the full suite without changing test configuration. Production build PASS (142 modules); lint PASS with no warnings/errors. Existing regression cases cover Search/Clear no-ops, role-aware/mobile navigation, product creation, inventory updates/shortcut, and image lightboxes.
+- Manual runtime: browser discovery returned no connected browsers or apps. Desktop/mobile visual checks, sticky/header layout, and responsive create-product layout remain for user confirmation; no live runtime verification is claimed.
+- No backend code, API contracts, dependencies, router configuration, or backend documentation changed. Existing staged work was preserved; this pass remains unstaged/uncommitted on phase-5b-e2e-regression.

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ProductCard } from '../components/catalogue/ProductCard'
 import { EmptyState } from '../components/feedback/EmptyState'
@@ -7,6 +7,8 @@ import { LoadingState } from '../components/feedback/LoadingState'
 import { catalogueService } from '../services/catalogueService'
 import type { Category, PageResponse, ProductListParams, ProductSummary } from '../types/catalogue'
 import { normalizeApiError } from '../utils/apiError'
+
+import { useDismiss } from '../hooks/useDismiss'
 
 const PAGE_SIZE = 12
 
@@ -26,6 +28,12 @@ export function CataloguePage() {
   const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '')
   const [requestVersion, setRequestVersion] = useState(0)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const filterPanelRef = useRef<HTMLDivElement>(null)
+  const filterToggleRef = useRef<HTMLButtonElement>(null)
+  useDismiss([filterPanelRef, filterToggleRef], filtersOpen, (escape) => {
+    setFiltersOpen(false)
+    if (escape) filterToggleRef.current?.focus()
+  })
   const filterCount = ['categoryId', 'minPrice', 'maxPrice'].filter((key) => searchParams.has(key)).length
 
   const requestParams = useMemo<ProductListParams>(() => ({
@@ -104,8 +112,8 @@ export function CataloguePage() {
             <button className="button button-primary" type="submit">Search</button>
           </div>
         </div>
-        <button className="button button-secondary filters-toggle" type="button" aria-expanded={filtersOpen} aria-controls="secondary-filters" onClick={() => setFiltersOpen(!filtersOpen)}>Filters{filterCount ? ` (${filterCount})` : ''}</button>
-        <div id="secondary-filters" className={filtersOpen ? 'secondary-filters is-open' : 'secondary-filters'}>
+        <button ref={filterToggleRef} className="button button-secondary filters-toggle" type="button" aria-expanded={filtersOpen} aria-controls="secondary-filters" onClick={() => setFiltersOpen(!filtersOpen)}>Filters{filterCount ? ` (${filterCount})` : ''}</button>
+        <div ref={filterPanelRef} id="secondary-filters" className={filtersOpen ? 'secondary-filters is-open' : 'secondary-filters'}>
         <div className="filter-field">
           <label htmlFor="category-filter">Category</label>
           <select id="category-filter" value={searchParams.get('categoryId') ?? ''} onChange={(event) => updateFilters({ categoryId: event.target.value || undefined })}>

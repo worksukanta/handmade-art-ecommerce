@@ -1,7 +1,10 @@
-import { useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCart } from '../../hooks/useCart'
+
+import { useDismiss } from '../../hooks/useDismiss'
+import { NavigationGroup } from './NavigationGroup'
 
 export function AppLayout() {
   const { isAuthenticated, isInitializing, signOut, user } = useAuth()
@@ -10,7 +13,18 @@ export function AppLayout() {
   const location = useLocation()
   const [openAt, setOpenAt] = useState<string | null>(null)
   const menuOpen = openAt === location.key
-  const closeMenu = () => setOpenAt(null)
+  const navRef = useRef<HTMLElement>(null)
+  const toggleRef = useRef<HTMLButtonElement>(null)
+  const closeMenu = () => {
+    setOpenAt(null)
+    navRef.current?.querySelectorAll('details[open]').forEach((group) => { (group as HTMLDetailsElement).open = false })
+  }
+  useDismiss([navRef, toggleRef], menuOpen, (escape) => {
+    if (escape && navRef.current?.querySelector('details[open]')) return
+    closeMenu()
+    if (escape) toggleRef.current?.focus()
+  })
+  const inSection = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
 
   const handleSignOut = () => {
     signOut()
@@ -19,47 +33,41 @@ export function AppLayout() {
 
   return (
     <div className="app-shell">
-      <header className="app-header" onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          const group = (event.target as HTMLElement).closest('details')
-          if (group?.open) { group.open = false; group.querySelector('summary')?.focus() }
-          else { closeMenu(); event.currentTarget.querySelector<HTMLButtonElement>('.menu-toggle')?.focus() }
-        }
-      }}>
+      <header className="app-header">
         <Link className="brand" to="/">Handmade Art</Link>
         <div className="mobile-header-actions">
-          {!isInitializing && user?.role === 'CUSTOMER' && <Link to="/cart" onClick={closeMenu}>Cart{itemCount > 0 ? ` (${itemCount})` : ''}</Link>}
-          <button className="button button-secondary menu-toggle" type="button" aria-label="Toggle navigation menu" aria-controls="primary-navigation" aria-expanded={menuOpen} onClick={() => setOpenAt(menuOpen ? null : location.key)}>☰ Menu</button>
+          {!isInitializing && user?.role === 'CUSTOMER' && <NavLink to="/cart" onClick={closeMenu}>Cart{itemCount > 0 ? ` (${itemCount})` : ''}</NavLink>}
+          <button ref={toggleRef} className="button button-secondary menu-toggle" type="button" aria-label="Toggle navigation menu" aria-controls="primary-navigation" aria-expanded={menuOpen} onClick={() => setOpenAt(menuOpen ? null : location.key)}>☰ Menu</button>
         </div>
-        <nav id="primary-navigation" className={menuOpen ? 'primary-navigation is-open' : 'primary-navigation'} aria-label="Primary navigation" onClick={(event) => { if ((event.target as HTMLElement).closest('a')) closeMenu() }}>
+        <nav ref={navRef} id="primary-navigation" className={menuOpen ? 'primary-navigation is-open' : 'primary-navigation'} aria-label="Primary navigation" onClick={(event) => { if ((event.target as HTMLElement).closest('a')) closeMenu() }}>
           <ul className="nav-list">
-            <li><Link to="/">Catalogue</Link></li>
+            <li><NavLink to="/" end>Catalogue</NavLink></li>
             {!isInitializing && !isAuthenticated && (
               <>
-                <li><Link to="/login">Sign in</Link></li>
-                <li><Link to="/register">Register</Link></li>
+                <li><NavLink to="/login">Sign in</NavLink></li>
+                <li><NavLink to="/register">Register</NavLink></li>
               </>
             )}
             {!isInitializing && user?.role === 'CUSTOMER' && (
               <>
-                <li><Link to="/cart">Cart{itemCount > 0 ? ` (${itemCount})` : ''}</Link></li>
-                <li><Link to="/orders">Orders</Link></li>
-                <li><Link to="/custom-requests">Custom requests</Link></li>
-                <li><details key={location.key} className="nav-group"><summary>Account</summary><ul>
-                  <li><Link to="/account/profile">Profile</Link></li>
-                  <li><Link to="/account/addresses">Addresses</Link></li>
+                <li><NavLink to="/cart">Cart{itemCount > 0 ? ` (${itemCount})` : ''}</NavLink></li>
+                <li><NavLink to="/orders">Orders</NavLink></li>
+                <li><NavLink to="/custom-requests">Custom requests</NavLink></li>
+                <li><NavigationGroup key={location.key} label="Account" active={inSection("/account")}>
+                  <li><NavLink to="/account/profile">Profile</NavLink></li>
+                  <li><NavLink to="/account/addresses">Addresses</NavLink></li>
                   <li><button type="button" onClick={handleSignOut}>Sign out</button></li>
-                </ul></details></li>
+                </NavigationGroup></li>
               </>
             )}
             {!isInitializing && user?.role === 'ADMIN' && (
-              <li><details key={location.key} className="nav-group"><summary>Admin</summary><ul>
-                <li><Link to="/admin/custom-requests">Custom requests</Link></li>
-                <li><Link to="/admin/products">Products</Link></li>
-                <li><Link to="/admin/categories">Categories</Link></li>
-                <li><Link to="/admin/inventory">Inventory</Link></li>
-                <li><Link to="/admin/orders">Orders</Link></li>
-              </ul></details></li>
+              <li><NavigationGroup key={location.key} label="Admin" active={inSection("/admin")}>
+                <li><NavLink to="/admin/custom-requests">Custom requests</NavLink></li>
+                <li><NavLink to="/admin/products">Products</NavLink></li>
+                <li><NavLink to="/admin/categories">Categories</NavLink></li>
+                <li><NavLink to="/admin/inventory">Inventory</NavLink></li>
+                <li><NavLink to="/admin/orders">Orders</NavLink></li>
+              </NavigationGroup></li>
             )}
             {!isInitializing && isAuthenticated && user?.role !== 'CUSTOMER' && (
               <li><button type="button" onClick={handleSignOut}>Sign out</button></li>
